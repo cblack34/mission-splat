@@ -20,7 +20,7 @@ Names below are original. They describe the same structure as the photographed i
 2. Shuffle match tiles face down. This is the draw deck.
 3. Flip the top match tile and place it as the starting board.
 
-A game has two, three, or four seats. Who is first: the physical rule is the youngest seat. In a game with an AI seat, the human chooses the first seat. That choice is an assumption recorded in the brief. A starting tile is not a placement, so no claim resolves at setup.
+A game has two, three, or four seats. Who is first: the physical rule is the youngest seat. The session takes the first seat as an explicit start input: the humans agree on it, and with an AI seat the human chooses. Rules never compute it. That choice is an assumption recorded in the brief. A starting tile is not a placement, so no claim resolves at setup.
 
 ## Turn
 
@@ -50,7 +50,7 @@ A blank, a gray power cell, and an unchosen wildcard do not complete a color. A 
 
 ## Claim
 
-A seat claims a mission only by placing the match tile that completes that mission's pattern, on that seat's turn. If the other seat's placement completes your pattern, you do not claim it.
+A seat claims a mission only by placing the match tile that completes that mission's pattern, on that seat's turn. If another seat's placement completes your pattern, you do not claim it.
 
 On a legal claim:
 
@@ -73,7 +73,7 @@ A tile may show more than one power cell. Each power cell on the drawn tile may 
 
 ## AI
 
-The AI seat has its own two secret missions. It does not observe the human's missions. It must play a legal placement. A heuristic that prefers its own missions is enough for the POC. Search with hidden information is out of scope.
+The AI seat has its own two secret missions. It does not observe any other seat's missions, human or AI. It must play a legal placement. A heuristic that prefers its own missions is enough for the POC. Search with hidden information is out of scope.
 
 ## What the photographs do not decide
 
@@ -86,3 +86,4 @@ These are open. Do not invent a ruling in code without returning to the user.
 - Simultaneous completion of two missions by one placement. Preferred holding assumption: the seat claims one and the other stays secret, but this is not printed.
 - A wildcard on the starting tile: who names its color, or whether that tile is redrawn. No claim resolves at setup.
 - A pattern completed by rotate, stack, or bounce rather than by the placed tile's own cells: whether the acting seat may claim it.
+- Mission deck exhausted when a replacement is due, and match-tile deck exhausted on a draw: not printed. Return to the user.

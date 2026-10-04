@@ -16,12 +16,15 @@ Agent-run Unity CLI evidence (`unity test` results and play-mode captures that s
 - WHEN a tile is placed corner-only against the board, the placement is rejected and the board is unchanged. _Automated check:_ fixture asserts no tile added.
 - WHEN four cells of one scoring color form a row, square, or L, and the current seat placed the completing tile, that seat claims the matching secret mission. _Automated check:_ one fixture per shape, and the row fixture covers horizontal, vertical, and diagonal.
 - WHEN a claim resolves, that mission moves to the claim row, a replacement is drawn, and the turn passes. _Automated check:_ hand size unchanged, claim row grows by one, current seat changes.
-- WHEN a seat holds its fourth claim, a won event is emitted and further commands are rejected. _Automated check:_ three claims do not win; four claims win.
-- WHEN the other seat's placement completes your pattern, you do not claim it. _Automated check:_ pattern exists, claim list unchanged for your seat.
+- WHEN a seat holds its fourth claim, a won event is emitted and further commands are rejected. _Automated check:_ three claims do not win; four claims win, and a command after the win is rejected.
+- WHEN a game is set up at two, three, and four seats, each seat holds exactly two distinct secret missions, the board holds exactly one starting tile, and no claim resolves at setup. _Automated check:_ one fixture per seat count asserts hand sizes of 2, no duplicate mission ids across seats, board count of 1, and empty claim rows.
+- WHEN a session view is handed to a seat, it contains that seat's unclaimed missions and no other seat's unclaimed mission identities. Claimed missions are present for every seat. _Automated check:_ the real session view, not a test double, hides the other hands.
+- WHEN another seat's placement completes your pattern, you do not claim it. _Automated check:_ pattern exists, claim list unchanged for your seat, at two seats and at three or more seats.
 - WHEN a wildcard is chosen, later matching treats it as that color for the rest of the game. _Automated check:_ fixture before and after the next placement.
 - WHEN a tile is completely surrounded, rotate is rejected for that tile. _Automated check:_ four orthogonal neighbors, rotate rejected.
 - WHEN the drawn tile has stack and is placed on an occupied position, that position matches the top tile's cells. _Automated check:_ covered color no longer completes a pattern; top color does.
-- WHEN bounce removes a tile, that tile leaves the board and is the bottom of the draw deck. _Automated check:_ board count drops by one and the next draw after the deck cycles is that tile.
+- WHEN bounce removes a tile, that tile leaves the board and is the bottom of the draw deck. _Automated check:_ board count drops by one, the removed tile is the last element of the draw deck, and the order of the other deck tiles is unchanged.
+- WHEN a tile without stack is placed on an occupied position, or a stack tile is placed on an empty position, the placement is rejected. _Automated check:_ board unchanged.
 - The rules test project does not reference Unity.
 
 ## Session
@@ -32,7 +35,7 @@ Agent-run Unity CLI evidence (`unity test` results and play-mode captures that s
 
 ## Presentation
 
-- The table shows the board, the current seat's secret missions, and both claim rows.
+- The table shows the board, the current seat's secret missions, and every seat's claim row.
 - Legal orthogonal neighbors highlight before a placement. Corner-only slots do not.
 - Claimed missions render in a row that is not part of the board lattice.
 

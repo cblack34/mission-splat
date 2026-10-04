@@ -26,7 +26,7 @@ When evidence invalidates the plan, stop affected work, explain the impact, and 
 
 Active topology: **direct PRs to `main`**.
 
-Branch naming: `type/short-topic`, with `type` of `feat`, `fix`, `test`, or `docs`. Branches are owned by the agent that opened them until the human merges the PR.
+Branch naming: `type/short-topic`, with `type` the Conventional Commits type of the PR title (for example `feat`, `fix`, `test`, `docs`, `ci`, `chore`, `refactor`). Branches are owned by the agent that opened them until the human merges the PR.
 
 1. Create a branch for the next user-approved tactical unit from current `main`.
 2. Implement the unit, tests, and affected docs; run self-verification, the refactor-before-handoff gate, and self-review.
@@ -112,7 +112,7 @@ The **address → reply → resolve** flow is mandatory regardless of reviewer:
 
 CI must run the `AGENTS.md` verification commands on every PR. If the repository lacks CI, the implementation lead must propose CI bootstrap as the first code-bearing delivery unit. That initial PR is gated by complete local verification and review because CI does not yet exist; every later merge requires green CI. Keep CI minimal and do not spend CI time on artifacts nobody consumes. Required-status enforcement may be unavailable on the repository plan, so "never integrate on red CI" remains mandatory agent discipline even without a server-side gate.
 
-This repository has no CI yet. The intended workflow is GitHub Actions running the two `dotnet test` commands from `AGENTS.md`. Unity player builds are not required in CI for the POC.
+This repository has no CI yet. The intended workflow is GitHub Actions running the two `dotnet test` commands from `AGENTS.md`. Unity player builds are not required in CI for the POC. A definition-of-done command whose solution does not exist yet is not applicable to a unit that predates that solution; record the omitted command and reason in the PR. The unit that creates `app/MissionSplat.App.sln` adds its command to CI in the same PR. Final acceptance always requires both.
 
 ## Final verification
 

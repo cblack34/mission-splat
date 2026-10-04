@@ -8,7 +8,7 @@ _Code, types, schemas, and file layouts are **illustrative guidance, not mandate
 
 Mission Splat is a 2–4 seat tile game for one phone. Each seat has two secret mission cards. On a turn a seat draws a 2×2 match tile and places it orthogonal to the board. If that placement finishes a line, square, or L of one color on one of that seat's missions, the seat claims that mission, lays it face up, and draws a replacement. First to four claims wins.
 
-The POC is offline. One human can play both seats (pass-and-play), or one human can play an AI seat. A later room service is a seam, not a deliverable.
+The POC is offline. One human can play every seat (pass-and-play), or play alongside AI seats. Any seat count from 2 to 4 and any human/AI mix is allowed. A later room service is a seam, not a deliverable.
 
 Intended users are the people at the table, including a child who can follow a secret card. The player is Unity 6, URP, C#. iOS and Android are the phone targets. A desktop player is the same Unity project, built when a laptop demo is needed.
 
@@ -16,7 +16,7 @@ Intended users are the people at the table, including a child who can follow a s
 
 - The rules in [`rules.md`](rules.md): setup, orthogonal placement, three mission shapes, claim-on-your-placement, power cells, win at four claims.
 - A rules library a `dotnet test` run can execute with no Unity editor.
-- An application library with `ISession` and `IPlayer`, a `LocalSession` adapter, and an `AiPlayer` adapter that does not see the opponent's secret missions.
+- An application library with `ISession` and `IPlayer`, a `LocalSession` adapter, and an `AiPlayer` adapter that does not see any other seat's secret missions.
 - A Unity player that renders the board, the secret hand, the face-up claim row, and legal placement highlights, and that binds 2–4 seats to `LocalSession`.
 - Pass-and-play on one device, and human versus AI on one device.
 - Schematic diagrams in [`diagrams/`](diagrams/) as the visual reference. Source photographs stay out of the repo.
@@ -33,7 +33,7 @@ Intended users are the people at the table, including a child who can follow a s
 ## User directives and non-negotiables
 
 1. **Rules stay engine-free.** The domain library references no `UnityEngine` type. Failure: a server or `dotnet test` cannot judge a move without the editor. Verification: `dotnet test` on the rules solution, with no Unity reference in that project.
-2. **Claim is placement-owned.** A pattern on your mission scores only if the tile you just placed completed it. Failure: the other seat's tile completes your card and you take the claim. Verification: rules fixtures for both the legal claim and the stolen-pattern rejection.
+2. **Claim is placement-owned.** A pattern on your mission scores only if the tile you just placed completed it. Failure: another seat's tile completes your card and you take the claim. Verification: rules fixtures for both the legal claim and the stolen-pattern rejection.
 3. **Offline multiplayer is local.** Two to four human adapters share one `LocalSession`. Failure: pass-and-play opens a socket or requires a second device. Verification: human observation of a 3-seat game on one player, plus an automated test that four human command sources can alternate on `LocalSession`.
 4. **No copied trade dress.** Original splat shapes and original names only. Failure: a farm character, the physical product name, or a source photo lands in the tree or the player. Verification: review of the diff and of the built content.
 
@@ -61,7 +61,7 @@ Assumptions, labeled as such:
 - "Completely surrounded" means all four orthogonal neighbors are occupied.
 - The wildcard color is chosen once and kept for the rest of that game.
 - Gray power cells and the blank cell do not score as a color.
-- For AI, the human may choose who is first. The physical "youngest goes first" rule has no AI meaning.
+- The first seat is an explicit start input. Rules do not compute youngest. With an AI seat, the human chooses.
 
 Open gate: the photographed rules do not list the full match-tile census. A representative deck may ship if fixtures name it as representative. A claim that the deck matches the physical box is not allowed until a census exists.
 
