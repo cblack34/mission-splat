@@ -26,7 +26,7 @@ Names are illustrative. The dependency rule is not: Unity may reference App and 
 - **RemoteSession** is not in the POC. When it exists, it implements `ISession` and stays outside Unity.
 - **Rules** accepts a command and returns events: placed, rotated, stacked, bounced, wildcard chosen, claimed, won.
 
-A tap becomes a command. `LocalSession` asks Rules. Rules returns events. The table renders events. On the AI seat, `AiPlayer` is asked for a command. Pass-and-play is two `HumanPlayer` seats on one `LocalSession`.
+A tap becomes a command. `LocalSession` asks Rules. Rules returns events. The table renders events. On the AI seat, `AiPlayer` is asked for a command. Pass-and-play is 2–4 `HumanPlayer` seats on one `LocalSession`. Empty seats may be AI adapters.
 
 ## Contracts
 
@@ -39,3 +39,7 @@ The player must not take the rules package from a NuGet feed. Build the DLL and 
 - A JS game inside a WebView. Rejected for this horizon so the exercise matches the store-game stack.
 - FastAPI as the authority. Rejected because it cannot reference the C# rules library.
 - Unity as a WebView host. Rejected because the player is the game, not an installer.
+
+## Dependency policy
+
+Add a dependency only when the BCL or a package already required by the player cannot do the job. The license must be MIT, Apache-2.0, or BSD, or the Unity package must be under the Unity companion license. It must target `netstandard2.1` if Rules or App reference it, and it must load in Unity 6.3. Do not add a package with a known high-severity advisory. Review rejects a NuGet feed inside the Unity project for the rules library.

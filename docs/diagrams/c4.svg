@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 1680" width="960" height="1680" role="img" aria-labelledby="title desc">
-  <title id="title">Barnyard C4 architecture</title>
-  <desc id="desc">System context, containers, and components for the on-device Barnyard POC, with the later authoritative room shown as a dashed future.</desc>
+  <title id="title">Mission Splat C4 architecture</title>
+  <desc id="desc">System context, containers, and components for the on-device Mission Splat POC, with the later authoritative room shown as a dashed future.</desc>
   <defs>
     <style>
       .h1 { font: 700 28px system-ui, Segoe UI, sans-serif; fill: #0b1f33; }
@@ -124,7 +124,7 @@
   <text x="189" y="1224" text-anchor="middle" class="box-body-dark">Prefabs, UI Toolkit, input.</text>
 
   <rect x="64" y="1264" width="250" height="78" rx="8" fill="#85bbf0"/>
-  <text x="189" y="1294" text-anchor="middle" class="box-title-dark">Two seats, one device</text>
+  <text x="189" y="1294" text-anchor="middle" class="box-title-dark">2–4 seats, one device</text>
   <text x="189" y="1314" text-anchor="middle" class="box-body-dark">Pass-and-play. Cards stay hidden.</text>
 
   <text x="360" y="982" class="tag">APP</text>
@@ -165,7 +165,7 @@
   <line x1="314" y1="1123" x2="340" y2="1108" stroke="#33485c" stroke-width="1.4" marker-end="url(#arrow)"/>
   <line x1="594" y1="1109" x2="620" y2="1109" stroke="#33485c" stroke-width="1.4" marker-end="url(#arrow)"/>
   <text x="72" y="1390" class="rel">A tap becomes a command. LocalSession asks Rules. Rules returns events. The table view renders events. The AI is asked for a command on its seat. RemoteSession, later, sends that same command and renders the events the room returns.</text>
-  <text x="72" y="1412" class="rel">Pass-and-play is two HumanPlayer seats on one LocalSession. It is not a network mode with the radio off.</text>
+  <text x="72" y="1412" class="rel">Pass-and-play is 2–4 HumanPlayer seats on one LocalSession. It is not a network mode with the radio off.</text>
 
   <!-- LEGEND -->
   <text x="40" y="1548" class="level">LEGEND</text>
@@ -179,5 +179,5 @@
   <text x="560" y="1575" class="rel">Later, not in the POC</text>
   <rect x="40" y="1592" width="22" height="16" rx="8" fill="#08427b"/>
   <text x="70" y="1605" class="rel">Person</text>
-  <text x="40" y="1640" class="sub">Monorepo: rules/ and server/ are dotnet. unity/Barnyard is the player. packages/com.barnyard.rules is the local UPM package holding the built DLL. Server is a project reference, not a Unity import.</text>
+  <text x="40" y="1640" class="sub">Monorepo: rules/ and server/ are dotnet. unity/MissionSplat is the player. packages/com.mission-splat.rules is the local UPM package holding the built DLL. Server is a project reference, not a Unity import.</text>
 </svg>

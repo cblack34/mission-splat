@@ -686,3 +686,26 @@ Desktop.ini
 # Secrets
 .env
 *.pfx
+# Project exceptions. Last match wins over the templates above.
+!/rules/
+!/rules/**/*.csproj
+!/rules/**/*.sln
+!/app/
+!/app/**/*.csproj
+!/app/**/*.sln
+!/packages/
+!/packages/**
+!*.meta
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+/unity/**/*.csproj
+/unity/**/*.sln
+*.pfx
+*.p12
+*.p8
+*.keystore
+*.jks
+*.mobileprovision
+.env.*
+google-services.json

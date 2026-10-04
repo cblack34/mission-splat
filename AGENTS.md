@@ -6,7 +6,7 @@ Instructions for the AI agent that plans and builds this project. This file is t
 
 ## What this is
 
-Mission Splat is a two-player tile game for a phone: place a 2×2 splat tile, claim a secret shape only if your placement finished it, first to four claims wins. The POC is an offline Unity 6 player (iOS, Android, and a later desktop build of the same project). Rules live in a `netstandard2.1` library with no Unity reference. There is no server in the POC.
+Mission Splat is a 2–4 seat tile game for a phone: place a 2×2 splat tile, claim a secret shape only if your placement finished it, first to four claims wins. The POC is an offline Unity 6 player (iOS, Android, and a later desktop build of the same project). Rules live in a `netstandard2.1` library with no Unity reference. There is no server in the POC.
 
 ## Prime directive
 
@@ -21,8 +21,8 @@ The user approves each tactical slice. Agents may open PRs. Only the user merges
 Run these exact commands before every PR is integration-ready and before declaring the project complete:
 
 ```bash
-dotnet test rules/Barnyard.Rules.sln --configuration Release
-dotnet test app/Barnyard.App.sln --configuration Release
+dotnet test rules/MissionSplat.Rules.sln --configuration Release
+dotnet test app/MissionSplat.App.sln --configuration Release
 ```
 
 Every item in [`docs/acceptance.md`](docs/acceptance.md) must also pass. Slice-level checks show progress but never replace final acceptance. Prefer the Unity CLI (`unity test`, `unity build`, and the play-mode verification loop from `unity skill show`) for Unity evidence, and record it in the PR. Device deployment and on-device play stay human.
@@ -31,7 +31,7 @@ Every item in [`docs/acceptance.md`](docs/acceptance.md) must also pass. Slice-l
 
 1. Rules do not reference Unity. The same library must be callable from `dotnet test` and, later, from a server.
 2. A claim scores only when the current seat placed the completing tile.
-3. Pass-and-play is two human seats on one in-process session, not a network mode.
+3. Pass-and-play is 2–4 human seats on one in-process session, not a network mode.
 4. No physical-game name, logo, farm characters, or photographed art ships in the repo or the player.
 
 ## Strategic-to-tactical handoff

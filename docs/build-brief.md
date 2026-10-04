@@ -6,7 +6,7 @@ _Code, types, schemas, and file layouts are **illustrative guidance, not mandate
 
 ## Product outcome
 
-Mission Splat is a two-seat tile game for one phone. Each seat has two secret mission cards. On a turn a seat draws a 2×2 match tile and places it orthogonal to the board. If that placement finishes a line, square, or L of one color on one of that seat's missions, the seat claims that mission, lays it face up, and draws a replacement. First to four claims wins.
+Mission Splat is a 2–4 seat tile game for one phone. Each seat has two secret mission cards. On a turn a seat draws a 2×2 match tile and places it orthogonal to the board. If that placement finishes a line, square, or L of one color on one of that seat's missions, the seat claims that mission, lays it face up, and draws a replacement. First to four claims wins.
 
 The POC is offline. One human can play both seats (pass-and-play), or one human can play an AI seat. A later room service is a seam, not a deliverable.
 
@@ -17,7 +17,7 @@ Intended users are the people at the table, including a child who can follow a s
 - The rules in [`rules.md`](rules.md): setup, orthogonal placement, three mission shapes, claim-on-your-placement, power cells, win at four claims.
 - A rules library a `dotnet test` run can execute with no Unity editor.
 - An application library with `ISession` and `IPlayer`, a `LocalSession` adapter, and an `AiPlayer` adapter that does not see the opponent's secret missions.
-- A Unity player that renders the board, the secret hand, the face-up claim row, and legal placement highlights, and that binds two seats to `LocalSession`.
+- A Unity player that renders the board, the secret hand, the face-up claim row, and legal placement highlights, and that binds 2–4 seats to `LocalSession`.
 - Pass-and-play on one device, and human versus AI on one device.
 - Schematic diagrams in [`diagrams/`](diagrams/) as the visual reference. Source photographs stay out of the repo.
 
@@ -26,7 +26,7 @@ Intended users are the people at the table, including a child who can follow a s
 - A network room, accounts, matchmaking, and `RemoteSession`. The interfaces exist so a later adapter can send the same command and render returned events.
 - WebGL or a browser client. Unity web builds are a rejected path for this horizon.
 - Store listing, purchases, ads, and platform services.
-- More than two seats.
+- More than four seats.
 - A census of every physical tile. Deck composition beyond the photographed symbols is an open gate, not a guessed list.
 - The physical game's name, logo, farm characters, and photographed art.
 
@@ -34,7 +34,7 @@ Intended users are the people at the table, including a child who can follow a s
 
 1. **Rules stay engine-free.** The domain library references no `UnityEngine` type. Failure: a server or `dotnet test` cannot judge a move without the editor. Verification: `dotnet test` on the rules solution, with no Unity reference in that project.
 2. **Claim is placement-owned.** A pattern on your mission scores only if the tile you just placed completed it. Failure: the other seat's tile completes your card and you take the claim. Verification: rules fixtures for both the legal claim and the stolen-pattern rejection.
-3. **Offline multiplayer is local.** Two human adapters share one `LocalSession`. Failure: pass-and-play opens a socket or requires a second device. Verification: human observation of two seats on one player, plus an automated test that two human command sources can alternate on `LocalSession`.
+3. **Offline multiplayer is local.** Two to four human adapters share one `LocalSession`. Failure: pass-and-play opens a socket or requires a second device. Verification: human observation of a 3-seat game on one player, plus an automated test that four human command sources can alternate on `LocalSession`.
 4. **No copied trade dress.** Original splat shapes and original names only. Failure: a farm character, the physical product name, or a source photo lands in the tree or the player. Verification: review of the diff and of the built content.
 
 ## Architecture boundaries and contracts
@@ -91,11 +91,11 @@ Prefer the Unity CLI for project creation, editor driving, tests, builds, and pl
 
 ## Definition of done
 
-A two-seat offline game can be played to four claims on a device, human versus human and human versus AI, and the rules fixtures pass:
+An offline game of 2–4 seats can be played to four claims on a device, including a human-only table and a table with an AI seat, and the rules fixtures pass:
 
 ```bash
-dotnet test rules/Barnyard.Rules.sln --configuration Release
-dotnet test app/Barnyard.App.sln --configuration Release
+dotnet test rules/MissionSplat.Rules.sln --configuration Release
+dotnet test app/MissionSplat.App.sln --configuration Release
 ```
 
 Every item in [`acceptance.md`](acceptance.md) passes. The room service is absent.

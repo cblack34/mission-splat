@@ -20,15 +20,15 @@ Names below are original. They describe the same structure as the photographed i
 2. Shuffle match tiles face down. This is the draw deck.
 3. Flip the top match tile and place it as the starting board.
 
-The POC has two seats. Who is first: the physical rule is the youngest seat. In human-versus-AI play, the human chooses the first seat. That choice is an assumption recorded in the brief.
+A game has two, three, or four seats. Who is first: the physical rule is the youngest seat. In a game with an AI seat, the human chooses the first seat. That choice is an assumption recorded in the brief. A starting tile is not a placement, so no claim resolves at setup.
 
 ## Turn
 
 1. The current seat draws the top match tile.
-2. The seat places it so that it shares at least one full side with a tile already on the board. Corner-only contact is illegal. See [`diagrams/placement.svg`](diagrams/placement.svg).
-3. If the drawn tile has a power cell, the seat may use that power once, as part of the same turn, under the power rules below.
+2. The seat places the tile. Ordinary placement must share at least one full side with a tile already on the board. Corner-only contact is illegal. See [`diagrams/placement.svg`](diagrams/placement.svg). If the drawn tile has stack, the seat may instead place it on top of a tile already on the board. Stack is this placement, not a second placement after the tile is already beside the board.
+3. If the drawn tile has rotate or bounce, the seat may use each once after the placement, under the power rules below.
 4. If the drawn tile has a wildcard, the seat names its color before matching.
-5. Resolve claims. Then the other seat plays.
+5. Resolve claims. Then the next seat plays.
 
 A tile that cannot be placed legally does not get discarded by a rule the photographs state. That case is an open edge: stop and return it to the user rather than inventing a discard rule.
 
@@ -83,4 +83,6 @@ These are open. Do not invent a ruling in code without returning to the user.
 - Whether a stack buries the covered tile for the rest of the game or only while covered.
 - Bounce of the last remaining tile.
 - A drawn tile that has no legal orthogonal neighbor and no stack power.
-- Simultaneous completion of both missions by one placement. Preferred holding assumption: the seat claims one and the other stays secret, but this is not printed.
+- Simultaneous completion of two missions by one placement. Preferred holding assumption: the seat claims one and the other stays secret, but this is not printed.
+- A wildcard on the starting tile: who names its color, or whether that tile is redrawn. No claim resolves at setup.
+- A pattern completed by rotate, stack, or bounce rather than by the placed tile's own cells: whether the acting seat may claim it.
