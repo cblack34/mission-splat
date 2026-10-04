@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 180" width="280" height="180" role="img" aria-label="Four in a square, any one color">
-  <rect width="280" height="180" rx="16" fill="#f7f1e4"/>
-  <text x="20" y="32" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1c3348">Four in a square</text>
-  <text x="20" y="52" font-family="system-ui,sans-serif" font-size="12" fill="#4a5b6b">2×2 block. One color.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" width="320" height="240" role="img" aria-label="Four in a square, any one color">
+  <rect width="320" height="240" rx="16" fill="#f7f1e4"/>
+  <text x="160" y="36" text-anchor="middle" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1c3348">Four in a square</text>
+  <text x="160" y="56" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#4a5b6b">2×2 block. One color.</text>
   <g fill="#9c36b5">
-    <circle cx="150" cy="90" r="22"/>
-    <circle cx="210" cy="90" r="22"/>
-    <circle cx="150" cy="148" r="22"/>
-    <circle cx="210" cy="148" r="22"/>
+    <circle cx="136" cy="122" r="24"/>
+    <circle cx="184" cy="122" r="24"/>
+    <circle cx="136" cy="170" r="24"/>
+    <circle cx="184" cy="170" r="24"/>
   </g>
 </svg>
