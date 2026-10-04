@@ -14,7 +14,7 @@ Agent-run Unity CLI evidence (`unity test` results and play-mode captures that s
 ## Rules
 
 - WHEN a tile is placed corner-only against the board, the placement is rejected and the board is unchanged. _Automated check:_ fixture asserts no tile added.
-- WHEN four cells of one scoring color form a row, square, or L, and the current seat placed the completing tile, that seat claims the matching secret mission. _Automated check:_ one fixture per shape, and the row fixture covers horizontal, vertical, and diagonal.
+- WHEN four cells of one scoring color form a row, square, or L, and the current seat placed the completing tile, that seat claims the matching secret mission. _Automated check:_ one fixture per shape; the row fixture covers horizontal, vertical, and diagonal; the L covers all 8 orientations; at least one row, square, and L spans a tile boundary; a pattern with one blank, gray, or unnamed-wildcard cell does not claim.
 - WHEN a claim resolves, that mission moves to the claim row, a replacement is drawn, and the turn passes. _Automated check:_ hand size unchanged, claim row grows by one, current seat changes.
 - WHEN a seat holds its fourth claim, a won event is emitted and further commands are rejected. _Automated check:_ three claims do not win; four claims win, and a command after the win is rejected.
 - WHEN a game is set up at two, three, and four seats, each seat holds exactly two distinct secret missions, the board holds exactly one starting tile, and no claim resolves at setup. _Automated check:_ one fixture per seat count asserts hand sizes of 2, no duplicate mission ids across seats, board count of 1, and empty claim rows.
@@ -35,9 +35,10 @@ Agent-run Unity CLI evidence (`unity test` results and play-mode captures that s
 
 ## Presentation
 
-- The table shows the board, the current seat's secret missions, and every seat's claim row.
-- Legal orthogonal neighbors highlight before a placement. Corner-only slots do not.
-- Claimed missions render in a row that is not part of the board lattice.
+- The table shows the board, the current seat's secret missions, and every seat's claim row. _Human evidence:_ screenshot or play-mode capture in the completing PR.
+- WHEN the turn passes between human seats on one device, the secret missions are hidden until the incoming seat confirms. _Human evidence:_ observed in the 3-seat pass-and-play game.
+- Legal orthogonal neighbors highlight before a placement. Corner-only slots do not. _Human evidence:_ the same play-mode capture.
+- Claimed missions render in a row that is not part of the board lattice. _Human evidence:_ the same play-mode capture.
 
 ## Trade dress
 
