@@ -2,7 +2,7 @@
   <rect width="420" height="150" rx="16" fill="#f7f1e4"/>
   <text x="16" y="28" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1c3348">Cell types</text>
   <g font-family="system-ui,sans-serif" font-size="11" fill="#1c3348" text-anchor="middle">
-    <circle cx="36" cy="78" r="22" fill="#adb5bd"/>
+    <circle cx="36" cy="78" r="22" fill="#f8f9fa" stroke="#8d6e43"/>
     <text x="36" y="120">Blank</text>
     <circle cx="116" cy="78" r="22" fill="#adb5bd"/>
     <path d="M116 66 a12 12 0 1 1 -8 20" fill="none" stroke="#fff" stroke-width="3"/>

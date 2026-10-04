@@ -24,7 +24,7 @@ Agent-run Unity CLI evidence (`unity test` results and play-mode captures that s
 - WHEN a tile is completely surrounded, rotate is rejected for that tile. _Automated check:_ four orthogonal neighbors, rotate rejected.
 - WHEN the drawn tile has stack and is placed on an occupied position, that position matches the top tile's cells. _Automated check:_ covered color no longer completes a pattern; top color does.
 - WHEN bounce removes a tile, that tile leaves the board and is the bottom of the draw deck. _Automated check:_ board count drops by one, the removed tile is the last element of the draw deck, and the order of the other deck tiles is unchanged.
-- WHEN a tile without stack is placed on an occupied position, or a stack tile is placed on an empty position, the placement is rejected. _Automated check:_ board unchanged.
+- WHEN a tile without stack is placed on an occupied position, the placement is rejected. A tile with stack may still use ordinary orthogonal placement. _Automated check:_ non-stack on an occupied position leaves the board unchanged; a stack tile that shares a full side is accepted.
 - The rules test project does not reference Unity.
 
 ## Session
