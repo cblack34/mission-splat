@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 250" width="280" height="250" role="img" aria-label="Orthogonal placement is legal. Diagonal-only placement is not.">
+  <rect width="280" height="250" rx="16" fill="#f7f1e4"/>
+  <text x="16" y="28" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1c3348">Placement</text>
+  <text x="16" y="48" font-family="system-ui,sans-serif" font-size="12" fill="#4a5b6b">Must share a full side. Corner-only is illegal.</text>
+  <rect x="108" y="96" width="64" height="64" rx="6" fill="#f3d19c" stroke="#8d6e43"/>
+  <text x="140" y="132" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#1c3348">Board</text>
+  <g font-family="system-ui,sans-serif" font-size="18" font-weight="700" text-anchor="middle">
+    <text x="140" y="86" fill="#2f9e44">ok</text>
+    <text x="140" y="184" fill="#2f9e44">ok</text>
+    <text x="78" y="132" fill="#2f9e44">ok</text>
+    <text x="202" y="132" fill="#2f9e44">ok</text>
+    <text x="78" y="86" fill="#e03131">no</text>
+    <text x="202" y="86" fill="#e03131">no</text>
+    <text x="78" y="184" fill="#e03131">no</text>
+    <text x="202" y="184" fill="#e03131">no</text>
+  </g>
+</svg>

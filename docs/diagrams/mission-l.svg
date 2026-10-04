@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 200" width="280" height="200" role="img" aria-label="Four in an L, any rotation, any one color">
+  <rect width="280" height="200" rx="16" fill="#f7f1e4"/>
+  <text x="20" y="32" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1c3348">Four in an L</text>
+  <text x="20" y="52" font-family="system-ui,sans-serif" font-size="12" fill="#4a5b6b">Any rotation or reflection. One color.</text>
+  <g fill="#e03131">
+    <circle cx="120" cy="80" r="18"/>
+    <circle cx="120" cy="124" r="18"/>
+    <circle cx="120" cy="168" r="18"/>
+    <circle cx="164" cy="168" r="18"/>
+  </g>
+</svg>

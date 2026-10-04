@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 150" width="420" height="150" role="img" aria-label="Power cells: blank, rotate, stack, bounce, wildcard">
+  <rect width="420" height="150" rx="16" fill="#f7f1e4"/>
+  <text x="16" y="28" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1c3348">Power cells</text>
+  <g font-family="system-ui,sans-serif" font-size="11" fill="#1c3348" text-anchor="middle">
+    <circle cx="36" cy="78" r="22" fill="#adb5bd"/>
+    <text x="36" y="120">Blank</text>
+    <circle cx="116" cy="78" r="22" fill="#adb5bd"/>
+    <path d="M116 66 a12 12 0 1 1 -8 20" fill="none" stroke="#fff" stroke-width="3"/>
+    <polygon points="104,84 112,80 108,90" fill="#fff"/>
+    <text x="116" y="120">Rotate</text>
+    <circle cx="196" cy="78" r="22" fill="#adb5bd"/>
+    <path d="M188 78 h16 M196 70 v16" stroke="#fff" stroke-width="3"/>
+    <text x="196" y="120">Stack</text>
+    <circle cx="276" cy="78" r="22" fill="#adb5bd"/>
+    <path d="M266 78 h20" stroke="#fff" stroke-width="3"/>
+    <text x="276" y="120">Bounce</text>
+    <g>
+      <path d="M356 56 h22 v22 h-22 z" fill="#e03131"/>
+      <path d="M378 56 h22 v22 h-22 z" fill="#1c7ed6"/>
+      <path d="M356 78 h22 v22 h-22 z" fill="#2f9e44"/>
+      <path d="M378 78 h22 v22 h-22 z" fill="#9c36b5"/>
+    </g>
+    <text x="378" y="120">Wildcard</text>
+  </g>
+</svg>
