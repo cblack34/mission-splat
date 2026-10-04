@@ -85,6 +85,10 @@ _This is strategic guidance, not a required sequence. The implementation agent s
 3. Unity composition and table view, bound to `LocalSession`.
 4. Desktop player build only if a laptop demo is requested.
 
+## Unity tooling
+
+Prefer the Unity CLI for project creation, editor driving, tests, builds, and play-mode evidence. Install its agent skill with `unity skill install` and pin the CLI version, because it is beta (`v1.0.0-beta.12` when evaluated). Project creation needs a signed-in, licensed user and the `com.unity.pipeline` package (`unity pipeline install`). Fall back to the Editor GUI or human observation when the CLI fails, and tell the user. iOS signing, Android keystores, and device deployment are human steps. Verify CLI behavior on this project before relying on it.
+
 ## Definition of done
 
 A two-seat offline game can be played to four claims on a device, human versus human and human versus AI, and the rules fixtures pass:

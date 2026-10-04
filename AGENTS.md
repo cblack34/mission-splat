@@ -25,7 +25,7 @@ dotnet test rules/Barnyard.Rules.sln --configuration Release
 dotnet test app/Barnyard.App.sln --configuration Release
 ```
 
-Every item in [`docs/acceptance.md`](docs/acceptance.md) must also pass. Slice-level checks show progress but never replace final acceptance. Unity play-mode evidence is human observation, recorded in the PR, until an editor test target exists.
+Every item in [`docs/acceptance.md`](docs/acceptance.md) must also pass. Slice-level checks show progress but never replace final acceptance. Prefer the Unity CLI (`unity test`, `unity build`, and the play-mode verification loop from `unity skill show`) for Unity evidence, and record it in the PR. Device deployment and on-device play stay human.
 
 ## Non-negotiables
 
