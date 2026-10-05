@@ -635,16 +635,16 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,linux,visualstudiocode,jetbrains+all,unity,csharp,visualstudio
 
-# Unity
-[Ll]ibrary/
-[Tt]emp/
+# Unity. Anchored so a source folder named Build, Library, Temp, or Logs is not ignored.
+/unity/*/[Ll]ibrary/
+/unity/*/[Tt]emp/
 [Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-[Uu]ser[Ss]ettings/
-[Mm]emoryCaptures/
-[Rr]ecordings/
+/unity/*/[Bb]uild/
+/unity/*/[Bb]uilds/
+/unity/*/[Ll]ogs/
+/unity/*/[Uu]ser[Ss]ettings/
+/unity/*/[Mm]emoryCaptures/
+/unity/*/[Rr]ecordings/
 *.csproj
 *.unityproj
 *.sln
@@ -717,3 +717,14 @@ Desktop.ini
 *.mobileprovision
 .env.*
 google-services.json
+
+# Source folders the templates ignore by name. Last match wins.
+!/app/**/Logs/
+!/app/**/Logs/**
+!/rules/**/Logs/
+!/rules/**/Logs/**
+!/app/**/Build/
+!/app/**/Build/**
+!/rules/**/Build/
+!/rules/**/Build/**
+
