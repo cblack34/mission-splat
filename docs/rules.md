@@ -79,7 +79,7 @@ The AI seat has its own two secret missions. It does not observe any other seat'
 
 These are open. Do not invent a ruling in code without returning to the user.
 
-- Full match-tile and mission-card census.
+- The base deck is [`census.md`](census.md): four colors, one line, one L, and one square each, and 30 match tiles. Uncorrected rows in that table still need the maintainer's pass before encoding.
 - Whether a stack buries the covered tile for the rest of the game or only while covered.
 - Bounce of the last remaining tile.
 - A drawn tile that has no legal orthogonal neighbor and no stack power.
