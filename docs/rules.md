@@ -69,7 +69,7 @@ A power is printed on the tile that was drawn. Using it is optional unless a lat
 - **Bounce.** Remove one tile from the board and put it on the bottom of the draw deck. Do not remove the starting tile if it is the only tile, unless the user later rules otherwise. That edge is open.
 - **Blank.** No effect.
 
-A tile may show more than one power cell. Each power cell on the drawn tile may be used once on the turn it is drawn. Powers on tiles already on the board are not reused.
+A tile may show more than one power cell. Each rotate or bounce cell on the drawn tile may be used once on the turn it is drawn. Stack is not a repeatable action: one or more stack cells on the drawn tile grant the optional stack placement once, and extra stack cells do not grant a second placement. Powers on tiles already on the board are not reused.
 
 ## AI
 

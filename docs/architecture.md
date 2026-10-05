@@ -14,7 +14,7 @@ packages/com.mission-splat.game/   local UPM package holding the built Rules and
 server/                empty in the POC; later ASP.NET project reference
 ```
 
-Names are illustrative. The dependency rule is not: Unity may reference App and the UPM package; App may reference Rules; Rules references neither.
+Names are illustrative. The dependency rule is not: Unity consumes Rules and App only through the single local UPM package. It does not also reference the App project. App references Rules by project reference. The later server references Rules by project reference. Rules references neither.
 
 ## Components
 
