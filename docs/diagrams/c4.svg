@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 1680" width="960" height="1680" role="img" aria-labelledby="title desc">
+  <title id="title">Mission Splat C4 architecture</title>
+  <desc id="desc">System context, containers, and components for the on-device Mission Splat POC, with the later authoritative room shown as a dashed future.</desc>
+  <defs>
+    <style>
+      .h1 { font: 700 28px system-ui, Segoe UI, sans-serif; fill: #0b1f33; }
+      .h2 { font: 700 16px system-ui, Segoe UI, sans-serif; fill: #0b1f33; }
+      .sub { font: 400 13px system-ui, Segoe UI, sans-serif; fill: #4a5b6b; }
+      .box-title { font: 700 14px system-ui, Segoe UI, sans-serif; fill: #fff; }
+      .box-title-dark { font: 700 13px system-ui, Segoe UI, sans-serif; fill: #0b1f33; }
+      .box-body { font: 400 11px system-ui, Segoe UI, sans-serif; fill: #e8f1fa; }
+      .box-body-dark { font: 400 11px system-ui, Segoe UI, sans-serif; fill: #1c3348; }
+      .tag { font: 700 10px system-ui, Segoe UI, sans-serif; fill: #08427b; letter-spacing: .04em; }
+      .rel { font: 400 11px system-ui, Segoe UI, sans-serif; fill: #33485c; }
+      .level { font: 700 11px system-ui, Segoe UI, sans-serif; fill: #1168bd; letter-spacing: .08em; }
+      .future { font: 700 10px system-ui, Segoe UI, sans-serif; fill: #5c6770; letter-spacing: .06em; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 1.2 L 9 5 L 0 8.8 z" fill="#33485c"/>
+    </marker>
+    <marker id="arrow-future" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 1.2 L 9 5 L 0 8.8 z" fill="#8a939b"/>
+    </marker>
+  </defs>
+
+  <rect width="960" height="1680" fill="#f4f7fb"/>
+  <text x="40" y="46" class="h1">Mission Splat — C4</text>
+  <text x="40" y="70" class="sub">On-device POC. Same command and event seam for a later authoritative room. Desktop is another player build, not another system.</text>
+
+  <!-- LEVEL 1 -->
+  <text x="40" y="112" class="level">LEVEL 1 — SYSTEM CONTEXT</text>
+  <rect x="40" y="126" width="880" height="250" rx="16" fill="#fff" stroke="#d5dee8"/>
+
+  <rect x="72" y="168" width="150" height="132" rx="70" fill="#08427b"/>
+  <text x="147" y="226" text-anchor="middle" class="box-title">Player</text>
+  <text x="147" y="246" text-anchor="middle" class="box-body">Person, on device</text>
+
+  <rect x="360" y="160" width="250" height="148" rx="10" fill="#1168bd"/>
+  <text x="485" y="214" text-anchor="middle" class="box-title">Mission Splat player</text>
+  <text x="485" y="236" text-anchor="middle" class="box-body">Unity 6 game. Offline, 2-4 seats</text>
+  <text x="485" y="252" text-anchor="middle" class="box-body">any human/AI mix. iOS,</text>
+  <text x="485" y="268" text-anchor="middle" class="box-body">Android, later desktop.</text>
+
+  <rect x="700" y="160" width="190" height="148" rx="10" fill="#f7f8f9" stroke="#8a939b" stroke-dasharray="6 4"/>
+  <text x="795" y="200" text-anchor="middle" class="future">LATER</text>
+  <text x="795" y="224" text-anchor="middle" class="box-title-dark">Room service</text>
+  <text x="795" y="246" text-anchor="middle" class="box-body-dark">Authoritative turns.</text>
+  <text x="795" y="262" text-anchor="middle" class="box-body-dark">Not in the POC.</text>
+
+  <line x1="222" y1="234" x2="356" y2="234" stroke="#33485c" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="289" y="224" text-anchor="middle" class="rel">places a tile</text>
+  <line x1="610" y1="214" x2="696" y2="214" stroke="#8a939b" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow-future)"/>
+  <text x="653" y="204" text-anchor="middle" class="rel">sends command</text>
+  <line x1="696" y1="254" x2="610" y2="254" stroke="#8a939b" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow-future)"/>
+  <text x="653" y="274" text-anchor="middle" class="rel">returns events</text>
+
+  <!-- LEVEL 2 -->
+  <text x="40" y="414" class="level">LEVEL 2 — CONTAINERS</text>
+  <rect x="40" y="428" width="880" height="470" rx="16" fill="#fff" stroke="#d5dee8"/>
+
+  <rect x="64" y="452" width="560" height="422" rx="12" fill="#eef5fc" stroke="#1168bd" stroke-dasharray="7 5"/>
+  <text x="84" y="476" class="tag">ON-DEVICE PROCESS — POC</text>
+
+  <rect x="88" y="496" width="230" height="150" rx="8" fill="#438dd5"/>
+  <text x="203" y="528" text-anchor="middle" class="box-title">Unity player</text>
+  <text x="203" y="550" text-anchor="middle" class="box-body">Container · Unity 6, URP</text>
+  <text x="203" y="570" text-anchor="middle" class="box-body">Views, input, human</text>
+  <text x="203" y="586" text-anchor="middle" class="box-body">adapter, composition.</text>
+  <text x="203" y="610" text-anchor="middle" class="box-body">Builds: iOS, Android,</text>
+  <text x="203" y="626" text-anchor="middle" class="box-body">later desktop.</text>
+
+  <rect x="360" y="496" width="230" height="150" rx="8" fill="#438dd5"/>
+  <text x="475" y="528" text-anchor="middle" class="box-title">MissionSplat.App</text>
+  <text x="475" y="550" text-anchor="middle" class="box-body">Library · netstandard2.1</text>
+  <text x="475" y="570" text-anchor="middle" class="box-body">ISession, IPlayer,</text>
+  <text x="475" y="586" text-anchor="middle" class="box-body">LocalSession, AiPlayer.</text>
+  <text x="475" y="610" text-anchor="middle" class="box-body">No UnityEngine.</text>
+  <text x="475" y="626" text-anchor="middle" class="box-body">Imported as a UPM DLL.</text>
+
+  <rect x="200" y="688" width="280" height="150" rx="8" fill="#1168bd"/>
+  <text x="340" y="722" text-anchor="middle" class="box-title">MissionSplat.Rules</text>
+  <text x="340" y="744" text-anchor="middle" class="box-body">Library · netstandard2.1</text>
+  <text x="340" y="764" text-anchor="middle" class="box-body">Board, placement, power-ups,</text>
+  <text x="340" y="780" text-anchor="middle" class="box-body">matcher, claim, turn machine.</text>
+  <text x="340" y="804" text-anchor="middle" class="box-body">dotnet test. No editor.</text>
+
+  <line x1="318" y1="571" x2="356" y2="571" stroke="#33485c" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="337" y="560" text-anchor="middle" class="rel">uses</text>
+  <line x1="430" y1="646" x2="360" y2="684" stroke="#33485c" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="430" y="672" class="rel">calls</text>
+
+  <rect x="656" y="496" width="232" height="300" rx="8" fill="#f7f8f9" stroke="#8a939b" stroke-dasharray="6 4"/>
+  <text x="772" y="528" text-anchor="middle" class="future">LATER CONTAINER</text>
+  <text x="772" y="556" text-anchor="middle" class="box-title-dark">Room service</text>
+  <text x="772" y="578" text-anchor="middle" class="box-body-dark">ASP.NET Core</text>
+  <text x="772" y="602" text-anchor="middle" class="box-body-dark">SignalR room hub.</text>
+  <text x="772" y="622" text-anchor="middle" class="box-body-dark">ProjectReference to</text>
+  <text x="772" y="638" text-anchor="middle" class="box-body-dark">App and Rules.</text>
+  <text x="772" y="666" text-anchor="middle" class="box-body-dark">Accepts a command</text>
+  <text x="772" y="682" text-anchor="middle" class="box-body-dark">only if Rules accepts it.</text>
+  <text x="772" y="710" text-anchor="middle" class="box-body-dark">RemoteSession adapter</text>
+  <text x="772" y="726" text-anchor="middle" class="box-body-dark">in App, not in Unity.</text>
+  <text x="772" y="754" text-anchor="middle" class="box-body-dark">No accounts in v1.</text>
+
+  <line x1="590" y1="560" x2="652" y2="560" stroke="#8a939b" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow-future)"/>
+  <text x="621" y="550" text-anchor="middle" class="rel">later</text>
+
+  <!-- LEVEL 3 -->
+  <text x="40" y="936" class="level">LEVEL 3 — COMPONENTS</text>
+  <rect x="40" y="950" width="880" height="560" rx="16" fill="#fff" stroke="#d5dee8"/>
+
+  <text x="72" y="982" class="tag">UNITY PLAYER</text>
+  <rect x="64" y="994" width="250" height="78" rx="8" fill="#85bbf0"/>
+  <text x="189" y="1024" text-anchor="middle" class="box-title-dark">Composition root</text>
+  <text x="189" y="1044" text-anchor="middle" class="box-body-dark">Binds 2-4 seats to LocalSession</text>
+
+  <rect x="64" y="1084" width="250" height="78" rx="8" fill="#85bbf0"/>
+  <text x="189" y="1114" text-anchor="middle" class="box-title-dark">HumanPlayer</text>
+  <text x="189" y="1134" text-anchor="middle" class="box-body-dark">IPlayer. Waits on a tap.</text>
+
+  <rect x="64" y="1174" width="250" height="78" rx="8" fill="#85bbf0"/>
+  <text x="189" y="1204" text-anchor="middle" class="box-title-dark">Table view</text>
+  <text x="189" y="1224" text-anchor="middle" class="box-body-dark">Prefabs, UI Toolkit, input.</text>
+
+  <rect x="64" y="1264" width="250" height="78" rx="8" fill="#85bbf0"/>
+  <text x="189" y="1294" text-anchor="middle" class="box-title-dark">2–4 seats, one device</text>
+  <text x="189" y="1314" text-anchor="middle" class="box-body-dark">Pass-and-play. Cards stay hidden.</text>
+
+  <text x="360" y="982" class="tag">APP</text>
+  <rect x="344" y="994" width="250" height="64" rx="8" fill="#85bbf0"/>
+  <text x="469" y="1022" text-anchor="middle" class="box-title-dark">ISession / IPlayer</text>
+  <text x="469" y="1040" text-anchor="middle" class="box-body-dark">Interfaces. Shared contract.</text>
+
+  <rect x="344" y="1070" width="250" height="78" rx="8" fill="#85bbf0"/>
+  <text x="469" y="1100" text-anchor="middle" class="box-title-dark">LocalSession</text>
+  <text x="469" y="1120" text-anchor="middle" class="box-body-dark">In-process ISession adapter.</text>
+
+  <rect x="344" y="1160" width="250" height="78" rx="8" fill="#85bbf0"/>
+  <text x="469" y="1190" text-anchor="middle" class="box-title-dark">AiPlayer</text>
+  <text x="469" y="1210" text-anchor="middle" class="box-body-dark">IPlayer. Own secret cards.</text>
+
+  <rect x="344" y="1250" width="250" height="78" rx="8" fill="#f7f8f9" stroke="#8a939b" stroke-dasharray="5 4"/>
+  <text x="469" y="1278" text-anchor="middle" class="future">LATER</text>
+  <text x="469" y="1296" text-anchor="middle" class="box-title-dark">RemoteSession</text>
+  <text x="469" y="1314" text-anchor="middle" class="box-body-dark">Same interface. Socket adapter.</text>
+
+  <text x="640" y="982" class="tag">RULES</text>
+  <rect x="624" y="994" width="264" height="64" rx="8" fill="#85bbf0"/>
+  <text x="756" y="1022" text-anchor="middle" class="box-title-dark">Turn machine</text>
+  <text x="756" y="1040" text-anchor="middle" class="box-body-dark">Whose seat, whose claim.</text>
+
+  <rect x="624" y="1070" width="264" height="78" rx="8" fill="#85bbf0"/>
+  <text x="756" y="1100" text-anchor="middle" class="box-title-dark">Board and placement</text>
+  <text x="756" y="1120" text-anchor="middle" class="box-body-dark">Orthogonal, rotate, stack, bounce.</text>
+
+  <rect x="624" y="1160" width="264" height="78" rx="8" fill="#85bbf0"/>
+  <text x="756" y="1190" text-anchor="middle" class="box-title-dark">Matcher and claim</text>
+  <text x="756" y="1210" text-anchor="middle" class="box-body-dark">Row, square, L, wildcard.</text>
+
+  <rect x="624" y="1250" width="264" height="78" rx="8" fill="#85bbf0"/>
+  <text x="756" y="1280" text-anchor="middle" class="box-title-dark">Commands, events, views</text>
+  <text x="756" y="1300" text-anchor="middle" class="box-body-dark">Seat-scoped. The seam types.</text>
+
+  <line x1="314" y1="1123" x2="340" y2="1108" stroke="#33485c" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <line x1="594" y1="1109" x2="620" y2="1109" stroke="#33485c" stroke-width="1.4" marker-end="url(#arrow)"/>
+  <text x="72" y="1390" class="rel">A tap becomes a command. LocalSession asks Rules. Rules returns events. The table view renders events. The AI is asked for a command on its seat.</text>
+  <text x="72" y="1408" class="rel">RemoteSession, later, sends that same command and renders the events the room returns.</text>
+  <text x="72" y="1430" class="rel">Pass-and-play is 2–4 HumanPlayer seats on one LocalSession. It is not a network mode with the radio off.</text>
+
+  <!-- LEGEND -->
+  <text x="40" y="1548" class="level">LEGEND</text>
+  <rect x="40" y="1562" width="22" height="16" rx="3" fill="#1168bd"/>
+  <text x="70" y="1575" class="rel">Internal system / rules library</text>
+  <rect x="280" y="1562" width="22" height="16" rx="3" fill="#438dd5"/>
+  <text x="310" y="1575" class="rel">Container</text>
+  <rect x="400" y="1562" width="22" height="16" rx="3" fill="#85bbf0"/>
+  <text x="430" y="1575" class="rel">Component</text>
+  <rect x="530" y="1562" width="22" height="16" rx="3" fill="#f7f8f9" stroke="#8a939b" stroke-dasharray="3 2"/>
+  <text x="560" y="1575" class="rel">Later, not in the POC</text>
+  <rect x="40" y="1592" width="22" height="16" rx="8" fill="#08427b"/>
+  <text x="70" y="1605" class="rel">Person</text>
+  <text x="40" y="1640" class="sub">Monorepo: rules/ and server/ are dotnet. unity/MissionSplat is the player.</text>
+  <text x="40" y="1658" class="sub">packages/com.mission-splat.game holds the Rules and App DLLs. Server is a project reference, not a Unity import.</text>
+</svg>

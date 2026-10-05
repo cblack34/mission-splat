@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 220" width="560" height="220" role="img" aria-label="Four in a row: horizontal, vertical, and diagonal, each one color">
+  <rect width="560" height="220" rx="16" fill="#f7f1e4"/>
+  <text x="20" y="32" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#1c3348">Four in a row</text>
+  <text x="20" y="52" font-family="system-ui,sans-serif" font-size="12" fill="#4a5b6b">Horizontal, vertical, or diagonal. One color.</text>
+  <g fill="#2f9e44">
+    <circle cx="40" cy="120" r="14"/>
+    <circle cx="76" cy="120" r="14"/>
+    <circle cx="112" cy="120" r="14"/>
+    <circle cx="148" cy="120" r="14"/>
+  </g>
+  <g fill="#1c7ed6">
+    <circle cx="250" cy="78" r="14"/>
+    <circle cx="250" cy="114" r="14"/>
+    <circle cx="250" cy="150" r="14"/>
+    <circle cx="250" cy="186" r="14"/>
+  </g>
+  <g fill="#e03131">
+    <circle cx="330" cy="168" r="14"/>
+    <circle cx="366" cy="132" r="14"/>
+    <circle cx="402" cy="96" r="14"/>
+    <circle cx="438" cy="60" r="14"/>
+  </g>
+</svg>

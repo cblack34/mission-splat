@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Example match tile, 2 by 2 cells, no decorations">
+  <rect width="200" height="200" rx="16" fill="#f3d19c" stroke="#8d6e43"/>
+  <circle cx="62" cy="62" r="28" fill="#e03131"/>
+  <circle cx="138" cy="62" r="28" fill="#1c7ed6"/>
+  <circle cx="62" cy="138" r="28" fill="#adb5bd"/>
+  <path d="M54 138 h16 M62 130 v16" stroke="#fff" stroke-width="4"/>
+  <g>
+    <path d="M110 110 h28 v28 h-28 z" fill="#e03131"/>
+    <path d="M138 110 h28 v28 h-28 z" fill="#1c7ed6"/>
+    <path d="M110 138 h28 v28 h-28 z" fill="#2f9e44"/>
+    <path d="M138 138 h28 v28 h-28 z" fill="#9c36b5"/>
+  </g>
+</svg>
