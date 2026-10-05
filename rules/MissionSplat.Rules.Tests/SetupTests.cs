@@ -153,6 +153,133 @@ public class SetupTests
         Rejects(result, "Mission 'a1' is not a row, square, or L.");
     }
 
+    [TestCase(1)]
+    [TestCase(5)]
+    public void SeatCountOutsideTwoThroughFour_IsRejected(int seatCount)
+    {
+        var names = new[] { "a", "b", "c", "d", "e" }.Take(seatCount).ToArray();
+        var missions = new Mission[seatCount * 2];
+        for (var i = 0; i < missions.Length; i++)
+        {
+            missions[i] = Cards.Purple("m" + i);
+        }
+
+        var result = RepresentativeDeck.Open(
+            names,
+            names[0],
+            missions,
+            [Cards.BlankTile("only")]);
+
+        Rejects(result, "A game has 2, 3, or 4 seats.");
+    }
+
+    [Test]
+    public void DefaultSeatId_IsRejected()
+    {
+        var result = Game.Start(new GameSetup(
+            [default, new SeatId("b")],
+            new SeatId("b"),
+            OrdinaryCatalog.Colors,
+            OrdinaryCatalog.NonScoringSymbols,
+            OrdinaryCatalog.Patterns,
+            OrdinaryCatalog.ClaimsRequiredToWin,
+            [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2")],
+            [Cards.BlankTile("only")]));
+
+        Rejects(result, "A seat id is required.");
+    }
+
+    [Test]
+    public void DuplicateSeat_IsRejected()
+    {
+        var result = RepresentativeDeck.Open(
+            ["a", "a"],
+            "a",
+            [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2")],
+            [Cards.BlankTile("only")]);
+
+        Rejects(result, "Seat 'a' is listed twice.");
+    }
+
+    [Test]
+    public void FirstSeatNotAtTheTable_IsRejected()
+    {
+        var result = RepresentativeDeck.Open(
+            ["a", "b"],
+            "z",
+            [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2")],
+            [Cards.BlankTile("only")]);
+
+        Rejects(result, "The first seat has to be one of the seats at the table.");
+    }
+
+    [Test]
+    public void MissionDeckShortOfTwoPerSeat_IsRejected()
+    {
+        Rejects(
+            Open(missions: [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1")]),
+            "The mission deck does not have two cards for every seat.");
+    }
+
+    [Test]
+    public void DuplicateMissionId_IsRejected()
+    {
+        Rejects(
+            Open(missions:
+            [
+                Cards.Purple("a1"),
+                Cards.Purple("a1"),
+                Cards.Purple("b1"),
+                Cards.Purple("b2"),
+            ]),
+            "Mission 'a1' is in the deck twice.");
+    }
+
+    [Test]
+    public void MissionColorOutsideTheCatalog_IsRejected()
+    {
+        Rejects(
+            Open(
+                colors: [OrdinaryCatalog.Purple],
+                missions:
+                [
+                    Cards.Mission("a1", MissionPattern.Row, OrdinaryCatalog.Red),
+                    Cards.Purple("a2"),
+                    Cards.Purple("b1"),
+                    Cards.Purple("b2"),
+                ]),
+            "Mission 'a1' uses color 'red', which is not in the catalog.");
+    }
+
+    [Test]
+    public void EmptyMatchDeck_IsRejected()
+    {
+        Rejects(Open(tiles: []), "The match deck needs a starting tile.");
+    }
+
+    [Test]
+    public void DuplicateTileId_IsRejected()
+    {
+        Rejects(
+            Open(tiles: [Cards.BlankTile("start"), Cards.BlankTile("start")]),
+            "Tile 'start' is in the deck twice.");
+    }
+
+    [Test]
+    public void CellOutsideTheCatalog_IsRejected()
+    {
+        Rejects(
+            Open(
+                colors: [OrdinaryCatalog.Purple],
+                tiles: [Cards.Tile("t", Cards.Red, Cards.Blank, Cards.Blank, Cards.Blank)]),
+            "Tile 't' uses color 'red', which is not in the catalog.");
+        Rejects(
+            Open(
+                symbols: [OrdinaryCatalog.Blank],
+                tiles: [Cards.Tile("t", Cards.Symbol("spark"), Cards.Blank, Cards.Blank, Cards.Blank)]),
+            "Tile 't' uses symbol 'spark', which is not a non-scoring symbol.");
+    }
+
     [TestCase(0)]
     [TestCase(-1)]
     public void ClaimsRequiredBelowOne_IsRejected(int claimsRequiredToWin)

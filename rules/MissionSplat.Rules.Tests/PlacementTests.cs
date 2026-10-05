@@ -22,6 +22,40 @@ public class PlacementTests
     }
 
     [Test]
+    public void WestFullSide_IsAccepted_AndCornersStayRejected()
+    {
+        var game = TwoSeatGame(
+            Cards.BlankTile("start"),
+            Cards.Tile(
+                "west",
+                Cards.Red,
+                Cards.Blue,
+                Cell.Color(OrdinaryCatalog.Green),
+                Cell.Color(OrdinaryCatalog.Purple)));
+
+        foreach (var tileY in new[] { 1, -1 })
+        {
+            var corner = game.Place(-1, tileY, 0);
+            Assert.That(corner.IsAccepted, Is.False);
+            Assert.That(corner.Rejection?.Reason, Is.EqualTo(RejectionReason.DoesNotShareFullSide));
+            Assert.That(corner.Events, Is.Empty);
+            Assert.That(corner.Game, Is.SameAs(game));
+            Assert.That(game.TileCount, Is.EqualTo(1));
+        }
+
+        var placed = See.Game(RepresentativeDeck.Play(game, -1, 0));
+
+        Assert.That(placed.TileCount, Is.EqualTo(2));
+        Assert.That(placed.HasTileAt(0, 0), Is.True);
+        Assert.That(placed.HasTileAt(-1, 0), Is.True);
+        Assert.That(placed.CellAt(-2, 0), Is.EqualTo(Cards.Red));
+        Assert.That(placed.CellAt(-1, 0), Is.EqualTo(Cards.Blue));
+        Assert.That(placed.CellAt(-2, 1), Is.EqualTo(Cell.Color(OrdinaryCatalog.Green)));
+        Assert.That(placed.CellAt(-1, 1), Is.EqualTo(Cell.Color(OrdinaryCatalog.Purple)));
+        Assert.That(placed.CellAt(0, 0), Is.EqualTo(Cards.Blank));
+    }
+
+    [Test]
     public void OccupiedCell_RejectsATileWithoutStack_AndAStackTileMayStillUseAFullSide()
     {
         var game = TwoSeatGame(

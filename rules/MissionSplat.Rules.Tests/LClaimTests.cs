@@ -112,6 +112,35 @@ public class LClaimTests
     }
 
     [Test]
+    public void MissingArmMiddle_DoesNotSatisfyAnLMission()
+    {
+        // First L template without (0,1): (0,0), (0,2), (1,0). (0,2) is on tile (0,1).
+        var game = RepresentativeDeck.Start(
+            ["a", "b"],
+            "a",
+            [
+                Cards.Mission("l-red", MissionPattern.L, OrdinaryCatalog.Red),
+                Cards.Purple("a2"),
+                Cards.Purple("b1"),
+                Cards.Purple("b2"),
+                Cards.Purple("spare"),
+            ],
+            [
+                Cards.Tile("start", Cards.Red, Cards.Red, Cards.Blank, Cards.Blank),
+                Cards.Tile("gap", Cards.Red, Cards.Blank, Cards.Blank, Cards.Blank),
+            ]);
+
+        var next = See.Game(RepresentativeDeck.Play(game, 0, 1));
+
+        Assert.That(next.CellAt(0, 0), Is.EqualTo(Cards.Red));
+        Assert.That(next.CellAt(1, 0), Is.EqualTo(Cards.Red));
+        Assert.That(next.CellAt(0, 1), Is.EqualTo(Cards.Blank));
+        Assert.That(next.CellAt(0, 2), Is.EqualTo(Cards.Red));
+        Assert.That(next.Claims(Cards.Seat("a")), Is.Empty);
+        Assert.That(See.Ids(next.Hand(Cards.Seat("a"))), Is.EqualTo(new[] { "l-red", "a2" }));
+    }
+
+    [Test]
     public void Skew_DoesNotSatisfyAnLMission()
     {
         var game = StartOpposite(

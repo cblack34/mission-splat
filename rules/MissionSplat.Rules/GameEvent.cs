@@ -9,6 +9,6 @@ public sealed record TilePlaced(
     int TileY,
     int QuarterTurnsClockwise) : GameEvent;
 
-public sealed record MissionClaimed(SeatId Seat, MissionId Mission, MissionId Replacement) : GameEvent;
+public sealed record MissionClaimed(SeatId Seat, MissionId Mission) : GameEvent;
 
 public sealed record GameWon(SeatId Seat, int ClaimCount) : GameEvent;

@@ -138,7 +138,7 @@ public sealed class Game
             missionDeck.RemoveAt(0);
             hand.Add(replacement);
             claims.Add(mission);
-            events.Add(new MissionClaimed(acting.Id, mission.Id, replacement.Id));
+            events.Add(new MissionClaimed(acting.Id, mission.Id));
         }
 
         var won = claims.Count >= ClaimsRequiredToWin;
