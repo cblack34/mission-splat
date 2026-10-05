@@ -153,19 +153,30 @@ public class SetupTests
         Rejects(result, "Mission 'a1' is not a row, square, or L.");
     }
 
+    [TestCase(0)]
+    [TestCase(-1)]
+    public void ClaimsRequiredBelowOne_IsRejected(int claimsRequiredToWin)
+    {
+        Rejects(
+            Open(claimsRequiredToWin: claimsRequiredToWin),
+            "Claims required to win must be at least 1.");
+    }
+
     private static CommandResult Open(
         Mission[]? missions = null,
         Tile[]? tiles = null,
         IReadOnlyList<ColorId>? colors = null,
-        IReadOnlyList<SymbolId>? symbols = null)
+        IReadOnlyList<SymbolId>? symbols = null,
+        int claimsRequiredToWin = OrdinaryCatalog.ClaimsRequiredToWin)
     {
         return RepresentativeDeck.Open(
             ["a", "b"],
             "a",
             missions ?? [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2")],
             tiles ?? [Cards.BlankTile("only")],
-            colors: colors,
-            symbols: symbols);
+            claimsRequiredToWin,
+            colors,
+            symbols);
     }
 
     private static void Rejects(CommandResult result, string message)
