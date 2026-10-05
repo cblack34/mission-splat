@@ -27,7 +27,7 @@ Intended users are the people at the table, including a child who can follow a s
 - WebGL or a browser client. Unity web builds are a rejected path for this horizon.
 - Store listing, purchases, ads, and platform services.
 - More than four seats.
-- A census of every physical tile. Deck composition beyond the photographed symbols is an open gate, not a guessed list.
+- A second rule set or extra tiles. The base deck is [`census.md`](census.md). Another definition may replace it. The matcher does not change.
 - The physical game's name, logo, farm characters, and photographed art.
 
 ## User directives and non-negotiables
@@ -65,7 +65,7 @@ Assumptions, labeled as such:
 - "Completely surrounded" means all four orthogonal neighbors are occupied.
 - The first seat is an explicit start input. Rules do not compute youngest. With an AI seat, the human chooses.
 
-Open gate: the photographed rules do not list the full match-tile census. A representative deck may ship if fixtures name it as representative. A claim that the deck matches the physical box is not allowed until a census exists.
+The base deck is [`census.md`](census.md). A fixture may use a smaller deck if it names that deck. A claim that the shipped deck matches the physical box uses the census definition.
 
 ## Risks and failure modes
 
