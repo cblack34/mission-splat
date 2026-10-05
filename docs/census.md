@@ -56,5 +56,3 @@ Cells are listed top-left, top-right, bottom-left, bottom-right. Rows marked cor
 | 28 | blue, blue, rotate, green | corrected |
 | 29 | purple, blank, rotate, green | corrected |
 | 30 | blue, blank, red, rotate | photo |
-
-Tiles 17 and 19 are not the same tile. The earlier claim that they were duplicates was wrong.
