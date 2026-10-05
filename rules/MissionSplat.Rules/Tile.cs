@@ -30,14 +30,14 @@ public sealed class Tile
         return located;
     }
 
-    // Y increases upward. A quarter-turn is clockwise, so local (0, 0) moves toward local (1, 0).
+    // Y increases upward. One clockwise quarter-turn sends (x, y) to (y, 1 - x).
     private static (int X, int Y) TurnClockwise(int x, int y, int quarterTurnsClockwise) =>
         quarterTurnsClockwise switch
         {
             0 => (x, y),
-            1 => (1 - y, x),
+            1 => (y, 1 - x),
             2 => (1 - x, 1 - y),
-            3 => (y, 1 - x),
+            3 => (1 - y, x),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(quarterTurnsClockwise),
                 quarterTurnsClockwise,

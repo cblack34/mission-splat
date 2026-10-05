@@ -29,8 +29,9 @@ public readonly record struct Cell
 
     public bool IsDefined => _kind != Kind.None;
 
+    // A default ColorId skips its constructor and stores null. Null is not a color, including against another null.
     public bool CountsAs(ColorId color) =>
-        _kind == Kind.Wild || (_kind == Kind.Color && _id == color.Value);
+        _kind == Kind.Wild || (_kind == Kind.Color && !IdText.IsMissing(_id) && _id == color.Value);
 
     public bool TryGetColor(out ColorId color)
     {

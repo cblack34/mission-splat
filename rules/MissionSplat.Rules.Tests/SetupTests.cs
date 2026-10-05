@@ -72,4 +72,108 @@ public class SetupTests
         Assert.That(game.TileCount, Is.EqualTo(1));
         Assert.That(game.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
     }
+
+    [Test]
+    public void DefaultColor_DoesNotMatchAColor_AndSetupRejectsIt()
+    {
+        var cell = Cell.Color(default);
+        Assert.That(cell.CountsAs(default), Is.False);
+        Assert.That(cell.CountsAs(OrdinaryCatalog.Red), Is.False);
+        Assert.That(cell.TryGetColor(out _), Is.False);
+
+        var result = Open(tiles: [new Tile(new TileId("t"), cell, Cards.Blank, Cards.Blank, Cards.Blank)]);
+
+        Rejects(result, "Tile 't' has a cell with no id.");
+    }
+
+    [Test]
+    public void DefaultSymbolCell_IsRejected()
+    {
+        var result = Open(tiles: [new Tile(
+            new TileId("t"),
+            Cell.Symbol(default),
+            Cards.Blank,
+            Cards.Blank,
+            Cards.Blank)]);
+
+        Rejects(result, "Tile 't' has a cell with no id.");
+    }
+
+    [Test]
+    public void EmptyCell_IsStillAnEmptyCell()
+    {
+        var result = Open(tiles: [new Tile(new TileId("t"), default, Cards.Blank, Cards.Blank, Cards.Blank)]);
+
+        Rejects(result, "Tile 't' has an empty cell.");
+    }
+
+    [Test]
+    public void DefaultCatalogIds_AreRejected()
+    {
+        Rejects(
+            Open(colors: [default, OrdinaryCatalog.Purple]),
+            "A color id is required.");
+        Rejects(
+            Open(symbols: [default]),
+            "A symbol id is required.");
+        Rejects(
+            Open(missions:
+            [
+                new Mission(default, MissionPattern.Row, OrdinaryCatalog.Purple),
+                Cards.Purple("a2"),
+                Cards.Purple("b1"),
+                Cards.Purple("b2"),
+            ]),
+            "A mission id is required.");
+        Rejects(
+            Open(missions:
+            [
+                new Mission(new MissionId("a1"), MissionPattern.Row, default),
+                Cards.Purple("a2"),
+                Cards.Purple("b1"),
+                Cards.Purple("b2"),
+            ]),
+            "A color id is required.");
+        Rejects(
+            Open(tiles: [new Tile(default, Cards.Blank, Cards.Blank, Cards.Blank, Cards.Blank)]),
+            "A tile id is required.");
+    }
+
+    [Test]
+    public void UnknownMissionPattern_IsRejected()
+    {
+        var result = Open(missions:
+        [
+            new Mission(new MissionId("a1"), (MissionPattern)99, OrdinaryCatalog.Purple),
+            Cards.Purple("a2"),
+            Cards.Purple("b1"),
+            Cards.Purple("b2"),
+        ]);
+
+        Rejects(result, "Mission 'a1' is not a row, square, or L.");
+    }
+
+    private static CommandResult Open(
+        Mission[]? missions = null,
+        Tile[]? tiles = null,
+        IReadOnlyList<ColorId>? colors = null,
+        IReadOnlyList<SymbolId>? symbols = null)
+    {
+        return RepresentativeDeck.Open(
+            ["a", "b"],
+            "a",
+            missions ?? [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2")],
+            tiles ?? [Cards.BlankTile("only")],
+            colors: colors,
+            symbols: symbols);
+    }
+
+    private static void Rejects(CommandResult result, string message)
+    {
+        Assert.That(result.IsAccepted, Is.False);
+        Assert.That(result.Game, Is.Null);
+        Assert.That(result.Events, Is.Empty);
+        Assert.That(result.Rejection?.Reason, Is.EqualTo(RejectionReason.InvalidSetup));
+        Assert.That(result.Rejection?.Message, Is.EqualTo(message));
+    }
 }

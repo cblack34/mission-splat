@@ -12,7 +12,7 @@ internal static class SetupCheck
 
         for (var i = 0; i < seats.Count; i++)
         {
-            if (string.IsNullOrWhiteSpace(seats[i].Value))
+            if (IdText.IsMissing(seats[i].Value))
             {
                 return Invalid("A seat id is required.");
             }
@@ -26,7 +26,7 @@ internal static class SetupCheck
             }
         }
 
-        if (string.IsNullOrWhiteSpace(setup.FirstSeat.Value) || !ContainsSeat(seats, setup.FirstSeat))
+        if (IdText.IsMissing(setup.FirstSeat.Value) || !ContainsSeat(seats, setup.FirstSeat))
         {
             return Invalid("The first seat has to be one of the seats at the table.");
         }
@@ -36,10 +36,20 @@ internal static class SetupCheck
             return Invalid("Claims required to win must be at least 1.");
         }
 
+        if (MissingId(setup.Colors, color => color.Value))
+        {
+            return Invalid("A color id is required.");
+        }
+
         var colors = Distinct(setup.Colors, out var duplicateColor);
         if (duplicateColor)
         {
             return Invalid("The color catalog lists a color twice.");
+        }
+
+        if (MissingId(setup.NonScoringSymbols, symbol => symbol.Value))
+        {
+            return Invalid("A symbol id is required.");
         }
 
         var symbols = Distinct(setup.NonScoringSymbols, out var duplicateSymbol);
@@ -63,6 +73,21 @@ internal static class SetupCheck
         var missionIds = new HashSet<MissionId>();
         foreach (var mission in setup.MissionDeck)
         {
+            if (IdText.IsMissing(mission.Id.Value))
+            {
+                return Invalid("A mission id is required.");
+            }
+
+            if (!IsKnownPattern(mission.Pattern))
+            {
+                return Invalid($"Mission '{mission.Id.Value}' is not a row, square, or L.");
+            }
+
+            if (IdText.IsMissing(mission.Color.Value))
+            {
+                return Invalid("A color id is required.");
+            }
+
             if (!missionIds.Add(mission.Id))
             {
                 return Invalid($"Mission '{mission.Id.Value}' is in the deck twice.");
@@ -83,6 +108,11 @@ internal static class SetupCheck
         var tileIds = new HashSet<TileId>();
         foreach (var tile in setup.MatchDeck)
         {
+            if (IdText.IsMissing(tile.Id.Value))
+            {
+                return Invalid("A tile id is required.");
+            }
+
             if (!tileIds.Add(tile.Id))
             {
                 return Invalid($"Tile '{tile.Id.Value}' is in the deck twice.");
@@ -115,17 +145,32 @@ internal static class SetupCheck
             return Invalid($"Tile '{tile.Value}' has an empty cell.");
         }
 
-        if (cell.TryGetColor(out var color) && !colors.Contains(color))
+        if (cell.TryGetColor(out var color))
         {
-            return Invalid($"Tile '{tile.Value}' uses color '{color.Value}', which is not in the catalog.");
+            if (!colors.Contains(color))
+            {
+                return Invalid($"Tile '{tile.Value}' uses color '{color.Value}', which is not in the catalog.");
+            }
+
+            return null;
         }
 
-        if (cell.TryGetSymbol(out var symbol) && !symbols.Contains(symbol))
+        if (cell.TryGetSymbol(out var symbol))
         {
-            return Invalid($"Tile '{tile.Value}' uses symbol '{symbol.Value}', which is not a non-scoring symbol.");
+            if (!symbols.Contains(symbol))
+            {
+                return Invalid($"Tile '{tile.Value}' uses symbol '{symbol.Value}', which is not a non-scoring symbol.");
+            }
+
+            return null;
         }
 
-        return null;
+        if (cell.IsWild)
+        {
+            return null;
+        }
+
+        return Invalid($"Tile '{tile.Value}' has a cell with no id.");
     }
 
     private static bool ContainsSeat(IReadOnlyList<SeatId> seats, SeatId seat)
@@ -156,13 +201,29 @@ internal static class SetupCheck
         return set;
     }
 
+    private static bool MissingId<T>(IReadOnlyList<T> items, Func<T, string?> id)
+    {
+        foreach (var item in items)
+        {
+            if (IdText.IsMissing(id(item)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsKnownPattern(MissionPattern pattern) =>
+        Enum.IsDefined(typeof(MissionPattern), pattern);
+
     private static bool HasDuplicatePattern(IReadOnlyList<MissionPattern> patterns, out bool unknown)
     {
         unknown = false;
         var seen = new HashSet<MissionPattern>();
         foreach (var pattern in patterns)
         {
-            if (!Enum.IsDefined(typeof(MissionPattern), pattern))
+            if (!IsKnownPattern(pattern))
             {
                 unknown = true;
                 return true;

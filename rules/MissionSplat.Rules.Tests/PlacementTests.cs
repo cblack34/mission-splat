@@ -82,12 +82,13 @@ public class PlacementTests
         Assert.That(game.TileCount, Is.EqualTo(1));
     }
 
+    // Y increases upward, so one clockwise turn moves bottom-left (index 0) to top-left (index 2).
     private static Cell[] ExpectedClockwise(int quarterTurns) => quarterTurns switch
     {
         0 => [Cards.Red, Cards.Blue, Cell.Color(OrdinaryCatalog.Green), Cell.Color(OrdinaryCatalog.Purple)],
-        1 => [Cell.Color(OrdinaryCatalog.Green), Cards.Red, Cell.Color(OrdinaryCatalog.Purple), Cards.Blue],
+        1 => [Cards.Blue, Cell.Color(OrdinaryCatalog.Purple), Cards.Red, Cell.Color(OrdinaryCatalog.Green)],
         2 => [Cell.Color(OrdinaryCatalog.Purple), Cell.Color(OrdinaryCatalog.Green), Cards.Blue, Cards.Red],
-        3 => [Cards.Blue, Cell.Color(OrdinaryCatalog.Purple), Cards.Red, Cell.Color(OrdinaryCatalog.Green)],
+        3 => [Cell.Color(OrdinaryCatalog.Green), Cards.Red, Cell.Color(OrdinaryCatalog.Purple), Cards.Blue],
         _ => throw new ArgumentOutOfRangeException(nameof(quarterTurns)),
     };
 

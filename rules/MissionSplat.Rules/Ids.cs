@@ -54,11 +54,14 @@ internal static class IdText
 {
     public static string Required(string value, string name)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        if (IsMissing(value))
         {
             throw new ArgumentException("An id is required.", name);
         }
 
         return value;
     }
+
+    // A default struct skips Required, so its text is null.
+    public static bool IsMissing(string? value) => string.IsNullOrWhiteSpace(value);
 }
