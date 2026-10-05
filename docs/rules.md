@@ -15,7 +15,7 @@ Names below are original. They describe the same structure as the photographed i
 
 ## Setup
 
-The library does not shuffle. It takes the seats in turn order, the first seat, the color catalog, the non-scoring symbols, the patterns in play, the claims required to win, and the mission and match decks already ordered. Fixtures label those decks as representative, not as a physical-box census. The ordinary game uses the ordinary catalog above and 4 claims. Setup can pass another positive count.
+The library does not shuffle. It takes the seats in turn order, the first seat, the color catalog, the non-scoring symbols, the patterns in play, the claims required to win, and the mission and match decks already ordered. The base deck is [`census.md`](census.md). A fixture may use a smaller deck if it names that deck. The ordinary game uses the ordinary catalog above and 4 claims. Setup can pass another positive count.
 
 1. Deal two missions from the front of the mission deck to each seat, in the seat order given to setup.
 2. Place the front match tile at the origin of the board, in the orientation it has in the deck.
