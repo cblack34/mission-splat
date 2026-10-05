@@ -30,9 +30,9 @@ A tap becomes a command. `LocalSession` asks Rules. Rules returns events. The ta
 
 ## Contracts
 
-The only types that cross the Unity boundary are commands, events, and the two interfaces. Prefabs, touch, and scenes do not appear in Rules or App. Anything handed to a seat, event or state view, is scoped to that seat: another seat's unclaimed mission identities never appear in it. Claimed missions are public. The local UPM package holds both the Rules and App DLLs; there is no second package and no NuGet feed inside Unity.
+The only types that cross the Unity boundary are commands, events, seat-scoped state views, and the two interfaces. Prefabs, touch, and scenes do not appear in Rules or App. Anything handed to a seat, event or state view, is scoped to that seat: another seat's unclaimed mission identities never appear in it. Claimed missions are public. The local UPM package holds both the Rules and App DLLs; there is no second package and no NuGet feed inside Unity.
 
-The player must not take the rules package from a NuGet feed. Build the DLL and consume the local UPM package. A later server uses a project reference, not the UPM package.
+The player must not take the rules package from a NuGet feed. The rules and app build copy the DLLs into the local UPM package. Those DLLs are build output and are not committed. A later server uses a project reference, not the UPM package.
 
 ## Rejected alternatives
 

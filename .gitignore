@@ -727,4 +727,5 @@ google-services.json
 !/app/**/Build/**
 !/rules/**/Build/
 !/rules/**/Build/**
-
+/packages/**/*.dll
+/packages/**/*.pdb
