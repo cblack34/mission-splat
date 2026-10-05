@@ -88,7 +88,7 @@ public sealed class Game
 
         if (_matchDeck.Length == 0)
         {
-            throw new InvalidOperationException(
+            throw new UnresolvedRulingException(
                 "The match deck has no tile to place. Exhausting the match deck is an open ruling, so this command was not applied.");
         }
 
@@ -119,7 +119,7 @@ public sealed class Game
         var completed = CompletedMissions(acting.Hand, nextGrid.Cells, written);
         if (completed.Count > _missionDeck.Length)
         {
-            throw new InvalidOperationException(
+            throw new UnresolvedRulingException(
                 "The mission deck cannot replace every mission this placement completed. Exhausting the mission deck is an open ruling, so this command was not applied.");
         }
 
