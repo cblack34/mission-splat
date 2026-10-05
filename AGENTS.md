@@ -25,7 +25,7 @@ dotnet test rules/MissionSplat.Rules.sln --configuration Release
 dotnet test app/MissionSplat.App.sln --configuration Release
 ```
 
-Every item in [`docs/acceptance.md`](docs/acceptance.md) must also pass. Slice-level checks show progress but never replace final acceptance. Prefer the Unity CLI (`unity test`, `unity build`, and the play-mode verification loop from `unity skill show`) for Unity evidence, and record it in the PR. Device deployment and on-device play stay human.
+Final acceptance in [`docs/acceptance.md`](docs/acceptance.md) is required on the completing PR. An earlier slice runs the definition-of-done commands whose solutions exist and the slice checks derived from that document. Slice checks show progress but never replace final acceptance. Prefer the Unity CLI (`unity test`, `unity build`, and the play-mode verification loop from `unity skill show`) for Unity evidence, and record it in the PR. Device deployment and on-device play stay human.
 
 ## Non-negotiables
 

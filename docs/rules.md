@@ -27,7 +27,7 @@ A game has two, three, or four seats. Who is first: the physical rule is the you
 1. The current seat draws the top match tile.
 2. The seat places the tile. Ordinary placement must share at least one full side with a tile already on the board. Corner-only contact is illegal. See [`diagrams/placement.svg`](diagrams/placement.svg). If the drawn tile has stack, the seat may instead place it on top of a tile already on the board. Stack is this placement, not a second placement after the tile is already beside the board.
 3. If the drawn tile has rotate or bounce, the seat may use each such power cell once after the placement, under the power rules below.
-4. If the drawn tile has a wildcard, the seat names its color before matching.
+4. If the drawn tile has an unchosen wildcard, the seat names its color before matching. A wildcard that already has a color keeps that color and is not named again.
 5. Resolve claims. Then the next seat plays.
 
 A tile that cannot be placed legally does not get discarded by a rule the photographs state. That case is an open edge: stop and return it to the user rather than inventing a discard rule.

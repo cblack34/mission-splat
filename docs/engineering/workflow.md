@@ -116,7 +116,7 @@ This repository has no CI yet. The intended workflow is GitHub Actions running t
 
 ## Final verification
 
-Slice checks prove progress but never replace [`../acceptance.md`](../acceptance.md). Before the human `main` merge, run every final command and acceptance check on the direct PR branch. Reconcile shipped behavior with strategic and descriptive docs. Report unresolved gates, accepted risks, deviations from suggested order, and deferred scope.
+Slice checks prove progress but never replace [`../acceptance.md`](../acceptance.md). The completing PR runs every final command and acceptance check before the human `main` merge. An earlier slice records which final checks do not yet apply. Reconcile shipped behavior with strategic and descriptive docs. Report unresolved gates, accepted risks, deviations from suggested order, and deferred scope.
 
 ## Stop and return to the user
 
