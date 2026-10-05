@@ -21,9 +21,9 @@ public class UnityReferenceGuardTests
     [Test]
     public void CompiledRulesAssemblyDoesNotReferenceUnity()
     {
-        var assembly = typeof(RulesAssembly).Assembly;
+        var assembly = typeof(Game).Assembly;
 
-        Assert.That(assembly.GetName().Name, Is.EqualTo(RulesAssembly.Name));
+        Assert.That(assembly.GetName().Name, Is.EqualTo("MissionSplat.Rules"));
 
         var offenders = assembly
             .GetReferencedAssemblies()
