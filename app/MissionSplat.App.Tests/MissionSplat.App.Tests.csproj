@@ -20,9 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MissionSplat.App\MissionSplat.App.csproj">
-      <Aliases>global,MissionSplatApp</Aliases>
-    </ProjectReference>
+    <ProjectReference Include="..\MissionSplat.App\MissionSplat.App.csproj" />
   </ItemGroup>
 
 </Project>

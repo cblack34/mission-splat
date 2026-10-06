@@ -1,6 +1,3 @@
-// The alias keeps this project reference in the manifest while the app library has no type.
-extern alias MissionSplatApp;
-
 using System.Reflection;
 using System.Xml.Linq;
 
