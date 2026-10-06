@@ -6,7 +6,7 @@ Instructions for the AI agent that plans and builds this project. This file is t
 
 ## What this is
 
-Mission Splat is a 2–4 seat tile game for a phone: place a 2×2 splat tile, claim a secret shape only if your placement finished it, first to four claims wins. The POC is an offline Unity 6 player (iOS, Android, and a later desktop build of the same project). Rules live in a `netstandard2.1` library with no Unity reference. There is no server in the POC.
+Mission Splat is a 2–4 seat tile game for a phone: place a 2×2 splat tile, claim a secret shape only if your placement finished it, first to the configured number of claims wins, four in the ordinary game. The POC is an offline Unity 6 player (iOS, Android, and a later desktop build of the same project). Rules live in a `netstandard2.1` library with no Unity reference. There is no server in the POC.
 
 ## Prime directive
 

@@ -6,7 +6,7 @@ _Code, types, schemas, and file layouts are **illustrative guidance, not mandate
 
 ## Product outcome
 
-Mission Splat is a 2–4 seat tile game for one phone. Each seat has two secret mission cards. On a turn a seat draws a 2×2 match tile and places it orthogonal to the board. If that placement finishes a line, square, or L of one color on one of that seat's missions, the seat claims that mission, lays it face up, and draws a replacement. First to four claims wins.
+Mission Splat is a 2–4 seat tile game for one phone. Each seat has two secret mission cards. On a turn a seat draws a 2×2 match tile and places it orthogonal to the board. If that placement finishes one or more of that seat's missions — a line, square, or L of one color — the seat claims each of them, lays it face up, and draws one replacement per claim. The ordinary game is first to four claims. Setup can require another count.
 
 The POC is offline. One human can play every seat (pass-and-play), or play alongside AI seats. Any seat count from 2 to 4 and any human/AI mix is allowed. A later room service is a seam, not a deliverable.
 
@@ -14,7 +14,7 @@ Intended users are the people at the table, including a child who can follow a s
 
 ## In scope
 
-- The rules in [`rules.md`](rules.md): setup, orthogonal placement, three mission shapes, claim-on-your-placement, power cells, win at four claims.
+- The rules in [`rules.md`](rules.md): setup, orthogonal placement, three mission shapes, claim-on-your-placement, power cells, and a win at the configured claim count, which is four in the ordinary game.
 - A rules library a `dotnet test` run can execute with no Unity editor.
 - An application library with `ISession` and `IPlayer`, a `LocalSession` adapter, and an `AiPlayer` adapter that does not see any other seat's secret missions.
 - A Unity player that renders the board, the secret hand, the face-up claim row, and legal placement highlights, and that binds 2–4 seats to `LocalSession`.
@@ -54,13 +54,15 @@ Adopted from the design session, not from a second implementation:
 - Shared rules are a `netstandard2.1` library. The player consumes a local UPM package that holds the built DLL. A NuGet feed inside Unity is rejected for this repo.
 - The later server, if built, is ASP.NET Core so it can reference that library. FastAPI was rejected because it would fork the matcher.
 - Web is out. Desktop is another player build.
+- A wildcard stays wild. Each mission check counts it as that mission's color. Nothing stores a chosen color.
+- One placement claims every secret mission the acting seat holds that the placement completed. The turn then passes once.
+- The ordinary win count is 4. Setup can require another positive count.
+- Colors, non-scoring symbols, the patterns in play, and the win count are setup data. The ordinary catalog is red, blue, green, purple, blank, rotate, stack, bounce, a wildcard cell, and the row, square, and L.
 
 Assumptions, labeled as such:
 
 - A stacked tile's cells replace the covered tile's cells for matching.
 - "Completely surrounded" means all four orthogonal neighbors are occupied.
-- The wildcard color is chosen once and kept for the rest of that game.
-- Gray power cells and the blank cell do not score as a color.
 - The first seat is an explicit start input. Rules do not compute youngest. With an AI seat, the human chooses.
 
 The base deck is [`census.md`](census.md). A fixture may use a smaller deck if it names that deck. A claim that the shipped deck matches the physical box uses the census definition.
@@ -91,7 +93,7 @@ Prefer the Unity CLI for project creation, editor driving, tests, builds, and pl
 
 ## Definition of done
 
-An offline game of 2–4 seats can be played to four claims on a device, including a human-only table and a table with an AI seat, and the rules fixtures pass:
+An offline game of 2–4 seats can be played to the configured claim count on a device (four in the ordinary game), including a human-only table and a table with an AI seat, and the rules fixtures pass:
 
 ```bash
 dotnet test rules/MissionSplat.Rules.sln --configuration Release
