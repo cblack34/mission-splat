@@ -112,7 +112,7 @@ GitHub issues are the WIP tracker and source of task-level detail.
 
 - **Topology:** Direct PR to `main`.
 - **Branch or spine:** `feat/app-local-session`, cut from `origin/main`.
-- **Final PR:** Not opened yet.
+- **Final PR:** Opened from `feat/app-local-session`. The link is recorded in the delivery record.
 - **Human merge gate:** Only the human may physically merge the final PR to `main`. Agents must stop when it is ready.
 
 ## Amendments
@@ -123,9 +123,9 @@ None.
 
 Complete once when the final PR is ready for human merge. Do not use this section for WIP status.
 
-- **Outcome:** Pending the final PR.
-- **Verification:** Pending the final PR.
-- **Deviations:** Pending the final PR.
-- **Unresolved gates or risks:** Pending the final PR.
-- **Final PR:** Pending the final PR.
-- **Merge state:** Not ready. Agents do not merge to `main`.
+- **Outcome:** `LocalSession` runs a 2–4 seat game in process. A seat view shows that seat's unclaimed missions and every seat's claims. `AiPlayer` returns a legal placement and prefers one that claims its own mission. The `rules` job also runs the app tests.
+- **Verification:** `dotnet test rules/MissionSplat.Rules.sln --configuration Release` passed, 77 tests, 0 failed. `dotnet test app/MissionSplat.App.sln --configuration Release` passed, 13 tests, 0 failed. Evidence is on #6, #7, #8, and the pull request.
+- **Deviations:** `Game.PendingMatchTile` reads the one tile the next placement will consume. `Tile.Local` is public so that tile's four cells can be shown. `LocalSession` remembers accepted placement coordinates because `Game` does not enumerate placed tiles; cell values are read back from the grid. No difficulty control.
+- **Unresolved gates or risks:** Power effects, how long a stack stays buried, bounce of the last tile, a tile with no legal placement, and deck exhaustion. Exhaustion still throws `UnresolvedRulingException` and does not change the game. Uncorrected census rows still need a maintainer pass. Unity, the UPM package, and device play are a later slice.
+- **Final PR:** Recorded when the pull request is opened.
+- **Merge state:** Ready for review. Agents do not merge to `main`.
