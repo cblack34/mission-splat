@@ -124,7 +124,7 @@ GitHub issues are the WIP tracker and source of task-level detail.
 
 - **Topology:** Direct PR to `main`.
 - **Branch or spine:** `feat/rules-claim-fixtures`, cut from `origin/main`.
-- **Final PR:** Not opened yet.
+- **Final PR:** [#5](https://github.com/cblack34/mission-splat/pull/5)
 - **Human merge gate:** Only the human may physically merge the final PR to `main`. Agents must stop when it is ready.
 
 ## Amendments
@@ -134,7 +134,7 @@ None.
 ## Delivery record
 
 - **Outcome:** The rules library deals a 2–4 seat game, places a tile on the cell grid, and claims every secret mission the acting seat's placement completed. A wildcard stays wild. The ordinary win count is 4, and setup can pass another count. CI runs the rules tests.
-- **Verification:** `dotnet test rules/MissionSplat.Rules.sln --configuration Release` passed, 49 tests, 0 failed, on `e9ede72`. The app solution does not exist, so that command was omitted. Evidence is on #2, #3, and the pull request.
+- **Verification:** `dotnet test rules/MissionSplat.Rules.sln --configuration Release` passed, 75 tests, 0 failed. The `rules` check is green on `9c246d2`. This receipt update is the following commit. The app solution does not exist, so that command was omitted. Evidence is on #2, #3, and the pull request.
 - **Deviations:** CI landed in this slice because neither test solution existed. The base-deck census from `main` is included. Fixtures use smaller named decks and do not encode the 30 match tiles.
 - **Unresolved gates or risks:** Power effects, how long a stack stays buried, bounce of the last tile, a tile with no legal placement, and deck exhaustion. Exhaustion throws `UnresolvedRulingException` and does not change the game. Uncorrected census rows still need a maintainer pass.
 - **Final PR:** https://github.com/cblack34/mission-splat/pull/5
