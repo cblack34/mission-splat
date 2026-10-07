@@ -110,7 +110,7 @@ GitHub issues are the WIP tracker and source of task-level detail.
 
 - **Topology:** Direct PR to `main`.
 - **Branch or spine:** `feat/unity-table`, cut from `origin/main`. Upstream is unset so a plain push cannot target `main`.
-- **Final PR:** Open when both issues are complete. Title `feat: add the Unity table bound to the local session`.
+- **Final PR:** https://github.com/cblack34/mission-splat/pull/12 Title `feat: add the Unity table bound to the local session`.
 - **Human merge gate:** Only the human may physically merge the final PR to `main`. Agents must stop when it is ready.
 
 ## Amendments
@@ -121,9 +121,9 @@ None.
 
 Complete once when the final PR is ready for human merge. Do not use this section for WIP status.
 
-- **Outcome:** Pending.
-- **Verification:** Pending.
-- **Deviations:** Pending.
-- **Unresolved gates or risks:** Pending.
-- **Final PR:** Pending.
-- **Merge state:** Not ready. Agents do not merge to `main`.
+- **Outcome:** `unity/MissionSplat` on editor `6000.3.16f1` starts a 2–4 seat game on `LocalSession`. The table shows the board, the pending tile at the chosen quarter-turn, the current human seat's missions after confirm, and every claim row. Highlights come from `Preview`. AI seats use `AiPlayer`.
+- **Verification:** `dotnet test rules/MissionSplat.Rules.sln --configuration Release` passed, 78 tests, 0 failed. `dotnet test app/MissionSplat.App.sln --configuration Release` passed, 15 tests, 0 failed. `unity test unity/MissionSplat --mode PlayMode` passed 1, failed 0. Captures are in `unity/MissionSplat/Assets/Captures/`.
+- **Deviations:** Package Manager pinned the URP blank template, including packages the table does not use. The pending tile is drawn with the same clockwise map as placement. `board.png`, `secrets.png`, and `highlights.png` are one post-confirm frame. `claim-row.png` and `conceal-between-humans.png` are one post-place frame.
+- **Unresolved gates or risks:** Rotate, stack-on-top, bounce, and the open rulings in `docs/rules.md`. Uncorrected census rows. Device play. A long game that never claims can still exhaust a deck.
+- **Final PR:** https://github.com/cblack34/mission-splat/pull/12
+- **Merge state:** Ready for review. Agents do not merge to `main`.
