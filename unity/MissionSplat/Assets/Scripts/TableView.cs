@@ -21,6 +21,7 @@ public sealed class TableView : MonoBehaviour
     private bool _seenSafeAreaFrame;
     private TablePlayView _playView;
     private TableSetupView _setupView;
+    private TableSnapshot _rendered;
 
     public event Action<Placement> Tapped;
     public event Action Confirmed;
@@ -35,6 +36,7 @@ public sealed class TableView : MonoBehaviour
     }
 
     // The overlay canvas does not track Screen.safeArea, so the inset is reapplied when it changes.
+    // Lattices keep pixel sizes from the last Render, so that snapshot is painted again. Setup has none and stays put.
     private void Update()
     {
         if (_safe != null && SafeAreaChanged())
@@ -57,6 +59,7 @@ public sealed class TableView : MonoBehaviour
 
     public void ShowSetup(TableStart draft)
     {
+        _rendered = null;
         _play.gameObject.SetActive(false);
         _setup.gameObject.SetActive(true);
         _setupView.Show(draft);
@@ -64,6 +67,7 @@ public sealed class TableView : MonoBehaviour
 
     public void Render(TableSnapshot snapshot)
     {
+        _rendered = snapshot;
         _setup.gameObject.SetActive(false);
         _play.gameObject.SetActive(true);
         _playView.Render(snapshot);
@@ -120,18 +124,32 @@ public sealed class TableView : MonoBehaviour
         if (width <= 0 || height <= 0 || safe.width <= 0f || safe.height <= 0f)
         {
             Ui.Stretch(_safe);
-            return;
         }
-
-        var min = new Vector2(Mathf.Clamp01(safe.xMin / width), Mathf.Clamp01(safe.yMin / height));
-        var max = new Vector2(Mathf.Clamp01(safe.xMax / width), Mathf.Clamp01(safe.yMax / height));
-        if (max.x <= min.x || max.y <= min.y)
+        else
         {
-            Ui.Stretch(_safe);
+            var min = new Vector2(Mathf.Clamp01(safe.xMin / width), Mathf.Clamp01(safe.yMin / height));
+            var max = new Vector2(Mathf.Clamp01(safe.xMax / width), Mathf.Clamp01(safe.yMax / height));
+            if (max.x <= min.x || max.y <= min.y)
+            {
+                Ui.Stretch(_safe);
+            }
+            else
+            {
+                Ui.Anchored(_safe, min, max, Vector2.zero, Vector2.zero);
+            }
+        }
+
+        RenderCurrentSnapshot();
+    }
+
+    private void RenderCurrentSnapshot()
+    {
+        if (_rendered == null || _play == null || !_play.gameObject.activeSelf)
+        {
             return;
         }
 
-        Ui.Anchored(_safe, min, max, Vector2.zero, Vector2.zero);
+        _playView.Render(_rendered);
     }
 
     private void EnsureEventSystem()
