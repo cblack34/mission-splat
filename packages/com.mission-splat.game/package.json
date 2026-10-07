@@ -1,0 +1,7 @@
+{
+  "name": "com.mission-splat.game",
+  "version": "0.1.0",
+  "displayName": "Mission Splat Game",
+  "description": "Local UPM package that delivers the Rules and App assemblies to the Unity player. The DLLs are build output.",
+  "unity": "6000.3"
+}

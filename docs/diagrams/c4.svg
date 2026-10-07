@@ -164,7 +164,7 @@
 
   <line x1="314" y1="1123" x2="340" y2="1108" stroke="#33485c" stroke-width="1.4" marker-end="url(#arrow)"/>
   <line x1="594" y1="1109" x2="620" y2="1109" stroke="#33485c" stroke-width="1.4" marker-end="url(#arrow)"/>
-  <text x="72" y="1390" class="rel">A tap becomes a command. LocalSession asks Rules. Rules returns events. The table view renders events. The AI is asked for a command on its seat.</text>
+  <text x="72" y="1390" class="rel">A tap becomes a command. LocalSession asks Rules. Rules returns events. The table renders the seat view. The AI is asked for a command on its seat.</text>
   <text x="72" y="1408" class="rel">RemoteSession, later, sends that same command and renders the events the room returns.</text>
   <text x="72" y="1430" class="rel">Pass-and-play is 2–4 HumanPlayer seats on one LocalSession. It is not a network mode with the radio off.</text>
 

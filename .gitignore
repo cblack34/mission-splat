@@ -648,6 +648,7 @@ $RECYCLE.BIN/
 *.csproj
 *.unityproj
 *.sln
+*.slnx
 *.suo
 *.tmp
 *.user
@@ -674,6 +675,7 @@ crashlytics-buildid.txt
 bin/
 obj/
 TestResults/
+/test-results.xml
 .vs/
 
 # OS and editors
@@ -729,3 +731,5 @@ google-services.json
 !/rules/**/Build/**
 /packages/**/*.dll
 /packages/**/*.pdb
+/packages/**/*.dll.meta
+/packages/**/*.pdb.meta

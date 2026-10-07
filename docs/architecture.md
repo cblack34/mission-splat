@@ -18,15 +18,16 @@ Names are illustrative. The dependency rule is not: Unity consumes Rules and App
 
 ## Components
 
-- **Composition root** (Unity) binds `HumanPlayer` or `AiPlayer` to `LocalSession`.
+- **Composition root** (Unity) binds `HumanPlayer` or `AiPlayer` to `LocalSession`. It collects the seat count, which seats are AI, and the first seat, then starts one session.
 - **HumanPlayer** (Unity) implements `IPlayer` by waiting on a tap.
-- **Table view** (Unity) renders events. It does not decide claims.
+- **Table view** (Unity) renders the current seat view: the board, the pending match tile, that seat's unclaimed missions, and every claim row. It does not decide claims. Highlights come from `Preview`.
+- **Named table deck** (Unity) is original player content, not the census. Automated play keeps its order. A human session may shuffle it before `Start`. The ordinary win count stays 4.
 - **LocalSession** (App) implements `ISession` in process.
 - **AiPlayer** (App) implements `IPlayer` from its own missions and the public board.
 - **RemoteSession** is not in the POC. When it exists, it implements `ISession` and stays outside Unity.
 - **Rules** accepts a command and returns events. Place is the command that resolves a claim, and setup does not claim. A successful place can return more than one claimed event, then won when the configured count is met. There is no wildcard-chosen event: a wild cell stays wild, and each mission check counts it as that mission's color. Rotate, stack, and bounce remain later commands on this same boundary. Matching reads the cell grid a placement writes. Setup supplies the color catalog, the non-scoring symbols, the active patterns, and the claims required to win.
 
-A tap becomes a command. `LocalSession` asks Rules. Rules returns events. The table renders events. On the AI seat, `AiPlayer` is asked for a command. Pass-and-play is 2–4 `HumanPlayer` seats on one `LocalSession`. Empty seats may be AI adapters.
+A tap becomes a command. `LocalSession` asks Rules. Rules returns events. The table then renders the current seat's `SeatView`, which `LocalSession` builds from the resulting game, not by drawing those events. On the AI seat, `AiPlayer` is asked for a command. Pass-and-play is 2–4 `HumanPlayer` seats on one `LocalSession`. Empty seats may be AI adapters.
 
 ## Contracts
 

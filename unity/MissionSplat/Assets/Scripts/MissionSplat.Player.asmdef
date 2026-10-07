@@ -1,0 +1,21 @@
+{
+    "name": "MissionSplat.Player",
+    "rootNamespace": "MissionSplat.Player",
+    "references": [
+        "MissionSplat.Game",
+        "UnityEngine.UI",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "MissionSplat.App.dll",
+        "MissionSplat.Rules.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
