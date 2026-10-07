@@ -149,6 +149,8 @@ public sealed class TableView : MonoBehaviour
             return;
         }
 
+        // Anchor changes do not update child rects until the canvas lays out. The board measures those rects.
+        Canvas.ForceUpdateCanvases();
         _playView.Render(_rendered);
     }
 
