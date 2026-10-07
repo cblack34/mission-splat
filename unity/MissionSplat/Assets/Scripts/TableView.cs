@@ -31,8 +31,21 @@ public sealed class TableView : MonoBehaviour
 
     private void Awake()
     {
+        PaintCamera();
         BuildCanvas();
         ShowSetup(TableStart.PassAndPlayDraft());
+    }
+
+    private static void PaintCamera()
+    {
+        var camera = Camera.main;
+        if (camera == null)
+        {
+            return;
+        }
+
+        camera.clearFlags = CameraClearFlags.SolidColor;
+        camera.backgroundColor = SplatPalette.Cream;
     }
 
     public void ShowSetup(TableStart draft)
@@ -49,7 +62,7 @@ public sealed class TableView : MonoBehaviour
         _play.gameObject.SetActive(true);
         Canvas.ForceUpdateCanvases();
         _status.text = string.IsNullOrEmpty(snapshot.StopMessage) ? snapshot.Status : snapshot.StopMessage;
-        PaintPending(snapshot.View.PendingMatchTile);
+        PaintPending(snapshot.View.PendingMatchTile, snapshot.QuarterTurns);
         PaintSecrets(snapshot);
         PaintBoard(snapshot);
         PaintClaims(snapshot.View);
@@ -159,7 +172,7 @@ public sealed class TableView : MonoBehaviour
         start.onClick.AddListener(() => Started?.Invoke(_draft));
     }
 
-    private void PaintPending(Tile pending)
+    private void PaintPending(Tile pending, int quarterTurns)
     {
         Ui.Clear(_pending);
         var title = Ui.Label("Title", _pending, 18, SplatPalette.Muted, TextAnchor.UpperLeft);
@@ -170,7 +183,7 @@ public sealed class TableView : MonoBehaviour
             return;
         }
 
-        PaintTile(_pending, pending, new Vector2(0.1f, 0.02f), new Vector2(0.9f, 0.80f));
+        PaintTile(_pending, pending, new Vector2(0.1f, 0.02f), new Vector2(0.9f, 0.80f), quarterTurns);
     }
 
     private void PaintSecrets(TableSnapshot snapshot)
@@ -315,7 +328,7 @@ public sealed class TableView : MonoBehaviour
         }
     }
 
-    private static void PaintTile(RectTransform parent, Tile tile, Vector2 min, Vector2 max)
+    private static void PaintTile(RectTransform parent, Tile tile, Vector2 min, Vector2 max, int quarterTurns)
     {
         var frame = Ui.Image("Tile", parent, SplatPalette.Tile);
         Ui.Anchored(frame.rectTransform, min, max, Vector2.zero, Vector2.zero);
@@ -337,11 +350,23 @@ public sealed class TableView : MonoBehaviour
             for (var x = 0; x < 2; x++)
             {
                 var cellRect = Ui.Rect("C" + x + y, lattice);
-                PlaceCell(cellRect, x, y, 1, 1, 0, 0, cell, 0f, 0f);
+                // Same clockwise map as Rules.Tile: (x, y) goes to (y, 1 - x).
+                var (turnedX, turnedY) = TurnClockwise(x, y, quarterTurns);
+                PlaceCell(cellRect, turnedX, turnedY, 1, 1, 0, 0, cell, 0f, 0f);
                 CellPainter.Paint(cellRect, tile.Local(x, y));
             }
         }
     }
+
+    private static (int X, int Y) TurnClockwise(int x, int y, int quarterTurns) =>
+        quarterTurns switch
+        {
+            0 => (x, y),
+            1 => (y, 1 - x),
+            2 => (1 - x, 1 - y),
+            3 => (1 - y, x),
+            _ => throw new ArgumentOutOfRangeException(nameof(quarterTurns), quarterTurns, "Quarter-turns are 0, 1, 2, or 3."),
+        };
 
     private static void PlaceCell(
         RectTransform rect,

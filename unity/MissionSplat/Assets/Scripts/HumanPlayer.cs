@@ -16,8 +16,6 @@ public sealed class HumanPlayer : IPlayer
 
     public SeatId Seat { get; }
 
-    public bool HasTap => _tap.HasValue;
-
     public void SubmitTap(Placement placement)
     {
         _tap = placement;

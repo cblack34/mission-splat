@@ -36,7 +36,6 @@ public sealed class TableSession : MonoBehaviour
 
     private void Awake()
     {
-        PaintCamera();
         _view = GetComponent<TableView>();
         if (_view == null)
         {
@@ -136,12 +135,12 @@ public sealed class TableSession : MonoBehaviour
                 return;
             }
 
-            var ai = (AiPlayer)CurrentPlayer();
-            var view = _session.View(ai.Seat);
+            var player = CurrentPlayer();
+            var view = _session.View(player.Seat);
             Placement chosen;
             try
             {
-                chosen = ai.ChoosePlacement(view);
+                chosen = player.ChoosePlacement(view);
             }
             catch (InvalidOperationException ex)
             {
@@ -149,7 +148,7 @@ public sealed class TableSession : MonoBehaviour
                 return;
             }
 
-            Place(ai.Seat, chosen);
+            Place(player.Seat, chosen);
         }
     }
 
@@ -255,7 +254,7 @@ public sealed class TableSession : MonoBehaviour
         return _players[_start.IndexOf(seat)];
     }
 
-    private bool CurrentIsAi() => CurrentPlayer() is AiPlayer;
+    private bool CurrentIsAi() => _start.IsAi(_start.IndexOf(CurrentView().CurrentSeat));
 
     private string Status(SeatView view)
     {
@@ -305,18 +304,6 @@ public sealed class TableSession : MonoBehaviour
         }
 
         return players;
-    }
-
-    private static void PaintCamera()
-    {
-        var camera = Camera.main;
-        if (camera == null)
-        {
-            return;
-        }
-
-        camera.clearFlags = CameraClearFlags.SolidColor;
-        camera.backgroundColor = SplatPalette.Cream;
     }
 }
 }

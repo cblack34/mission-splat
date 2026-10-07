@@ -675,6 +675,7 @@ crashlytics-buildid.txt
 bin/
 obj/
 TestResults/
+/test-results.xml
 .vs/
 
 # OS and editors
