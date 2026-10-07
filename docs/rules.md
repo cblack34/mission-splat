@@ -68,7 +68,7 @@ The ordinary win count is 4. Setup can require a different positive count. The f
 A power is printed on the tile that was drawn. Using it is optional unless a later ruling says otherwise. The photographs describe these effects. See [`diagrams/power-ups.svg`](diagrams/power-ups.svg).
 
 - **Rotate.** Turn any tile on the board 90 degrees, any number of quarter-turns, if that tile is not completely surrounded. Assumption: completely surrounded means all four orthogonal neighbors are occupied.
-- **Stack.** Place the drawn tile on top of any tile on the board instead of beside it. Assumption: the top tile's cells are the cells that match at that position.
+- **Stack.** Place the drawn tile on top of any tile on the board instead of beside it. The top tile's cells are the cells that match at that position. The covered tiles remain under that position. Uncovering them is still unresolved.
 - **Bounce.** Remove one tile from the board and put it on the bottom of the draw deck. Do not remove the starting tile if it is the only tile, unless the user later rules otherwise. That edge is open.
 - **Blank.** No effect.
 

@@ -42,7 +42,7 @@ public sealed class Game
 
     public int MatchDeckRemaining => _matchDeck.Length;
 
-    // The tile the next Place will consume. Null when the game has ended or none remains; Place still refuses that empty deck.
+    // The tile the next Place or Stack will consume. Null when the game has ended or none remains; either command still refuses that empty deck.
     public Tile? PendingMatchTile => _hasEnded || _matchDeck.Length == 0 ? null : _matchDeck[0];
 
     public IReadOnlyList<SeatId> SeatsInTurnOrder
@@ -79,6 +79,115 @@ public sealed class Game
     // Quarter-turns are clockwise and only orient this placement. They are not the rotate power.
     public CommandResult Place(int tileX, int tileY, int quarterTurnsClockwise)
     {
+        var unplayable = RejectBeforeConsumingMatchTile(quarterTurnsClockwise);
+        if (unplayable is not null)
+        {
+            return unplayable;
+        }
+
+        var tile = _matchDeck[0];
+        var located = tile.CellsAt(tileX, tileY, quarterTurnsClockwise);
+
+        // Covering a tile is Stack. Overlap stays illegal here even when the drawn tile shows stack.
+        if (_grid.Overlaps(located))
+        {
+            return Reject(RejectionReason.CellOccupied, "That cell is already occupied.");
+        }
+
+        if (!_grid.SharesFullSide(tileX, tileY))
+        {
+            return Reject(
+                RejectionReason.DoesNotShareFullSide,
+                "A tile has to share a full side with a tile already on the board.");
+        }
+
+        return ResolvePlacement(
+            tile,
+            tileX,
+            tileY,
+            quarterTurnsClockwise,
+            _grid.Place(tileX, tileY, tile.Id, located),
+            located);
+    }
+
+    // One or more stack cells allow this once. Place still refuses the same occupied cell.
+    public CommandResult Stack(int tileX, int tileY, int quarterTurnsClockwise)
+    {
+        var unplayable = RejectBeforeConsumingMatchTile(quarterTurnsClockwise);
+        if (unplayable is not null)
+        {
+            return unplayable;
+        }
+
+        var tile = _matchDeck[0];
+        if (!ShowsStack(tile))
+        {
+            return Reject(RejectionReason.NoStackCell, "The drawn tile has no stack cell.");
+        }
+
+        if (!_grid.HasTile(tileX, tileY))
+        {
+            return Reject(RejectionReason.NoTileToCover, "There is no tile at that position to cover.");
+        }
+
+        var located = tile.CellsAt(tileX, tileY, quarterTurnsClockwise);
+        return ResolvePlacement(
+            tile,
+            tileX,
+            tileY,
+            quarterTurnsClockwise,
+            _grid.Cover(tileX, tileY, tile.Id, located),
+            located);
+    }
+
+    public IReadOnlyList<Mission> Hand(SeatId seat) => Copy(Find(seat).Hand);
+
+    public IReadOnlyList<Mission> Claims(SeatId seat) => Copy(Find(seat).Claims);
+
+    public Cell? CellAt(int cellX, int cellY) => _grid.At(cellX, cellY);
+
+    public bool HasTileAt(int tileX, int tileY) => _grid.HasTile(tileX, tileY);
+
+    public IReadOnlyList<TileId> CoveredTileIds(int tileX, int tileY) => _grid.CoveredTileIds(tileX, tileY);
+
+    private List<Mission> CompletedMissions(
+        IReadOnlyList<Mission> hand,
+        IReadOnlyDictionary<CellCoord, Cell> cells,
+        HashSet<CellCoord> written)
+    {
+        var completed = new List<Mission>();
+        foreach (var mission in hand)
+        {
+            if (!PatternIsActive(mission.Pattern))
+            {
+                continue;
+            }
+
+            if (PatternSearch.WasCompletedBy(mission.Pattern, mission.Color, cells, written))
+            {
+                completed.Add(mission);
+            }
+        }
+
+        return completed;
+    }
+
+    private bool PatternIsActive(MissionPattern pattern)
+    {
+        foreach (var active in _patterns)
+        {
+            if (active == pattern)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Both placements consume the front match tile. An empty deck is the same open ruling for either.
+    private CommandResult? RejectBeforeConsumingMatchTile(int quarterTurnsClockwise)
+    {
         if (_hasEnded)
         {
             return Reject(RejectionReason.GameOver, "The game has already been won.");
@@ -95,29 +204,23 @@ public sealed class Game
                 "The match deck has no tile to place. Exhausting the match deck is an open ruling, so this command was not applied.");
         }
 
-        var tile = _matchDeck[0];
-        var located = tile.CellsAt(tileX, tileY, quarterTurnsClockwise);
+        return null;
+    }
 
-        // Covering a tile is the stack power. This command does not play it, so burial stays an open ruling.
-        if (_grid.Overlaps(located))
-        {
-            return Reject(RejectionReason.CellOccupied, "That cell is already occupied.");
-        }
-
-        if (!_grid.SharesFullSide(tileX, tileY))
-        {
-            return Reject(
-                RejectionReason.DoesNotShareFullSide,
-                "A tile has to share a full side with a tile already on the board.");
-        }
-
-        var written = new HashSet<CellCoord>(located.Length);
+    private CommandResult ResolvePlacement(
+        Tile tile,
+        int tileX,
+        int tileY,
+        int quarterTurnsClockwise,
+        Grid nextGrid,
+        IReadOnlyList<(int X, int Y, Cell Value)> located)
+    {
+        var written = new HashSet<CellCoord>(located.Count);
         foreach (var (x, y, _) in located)
         {
             written.Add(new CellCoord(x, y));
         }
 
-        var nextGrid = _grid.Place(tileX, tileY, tile.Id, located);
         var acting = _seats[_currentIndex];
         var completed = CompletedMissions(acting.Hand, nextGrid.Cells, written);
         if (completed.Count > _missionDeck.Length)
@@ -165,43 +268,16 @@ public sealed class Game
         return CommandResult.Accept(next, events);
     }
 
-    public IReadOnlyList<Mission> Hand(SeatId seat) => Copy(Find(seat).Hand);
-
-    public IReadOnlyList<Mission> Claims(SeatId seat) => Copy(Find(seat).Claims);
-
-    public Cell? CellAt(int cellX, int cellY) => _grid.At(cellX, cellY);
-
-    public bool HasTileAt(int tileX, int tileY) => _grid.HasTile(tileX, tileY);
-
-    private List<Mission> CompletedMissions(
-        IReadOnlyList<Mission> hand,
-        IReadOnlyDictionary<CellCoord, Cell> cells,
-        HashSet<CellCoord> written)
+    private static bool ShowsStack(Tile tile)
     {
-        var completed = new List<Mission>();
-        foreach (var mission in hand)
+        for (var y = 0; y < 2; y++)
         {
-            if (!PatternIsActive(mission.Pattern))
+            for (var x = 0; x < 2; x++)
             {
-                continue;
-            }
-
-            if (PatternSearch.WasCompletedBy(mission.Pattern, mission.Color, cells, written))
-            {
-                completed.Add(mission);
-            }
-        }
-
-        return completed;
-    }
-
-    private bool PatternIsActive(MissionPattern pattern)
-    {
-        foreach (var active in _patterns)
-        {
-            if (active == pattern)
-            {
-                return true;
+                if (tile.Local(x, y).TryGetSymbol(out var symbol) && symbol.Equals(OrdinaryCatalog.Stack))
+                {
+                    return true;
+                }
             }
         }
 
