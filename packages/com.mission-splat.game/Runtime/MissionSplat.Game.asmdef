@@ -1,0 +1,17 @@
+{
+  "name": "MissionSplat.Game",
+  "rootNamespace": "MissionSplat.Game",
+  "references": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "MissionSplat.App.dll",
+    "MissionSplat.Rules.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
