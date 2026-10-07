@@ -303,8 +303,8 @@ public sealed class TableView : MonoBehaviour
             for (var m = 0; m < row.Missions.Count; m++)
             {
                 var card = Ui.Image("Claim" + m, group, Color.white);
-                var left = 0.02f + (m * 0.23f);
-                Ui.Anchored(card.rectTransform, new Vector2(left, 0.02f), new Vector2(left + 0.21f, 0.70f), Vector2.zero, Vector2.zero);
+                var (cardMin, cardMax) = ClaimCardAnchors(m, row.Missions.Count);
+                Ui.Anchored(card.rectTransform, cardMin, cardMax, Vector2.zero, Vector2.zero);
                 CellPainter.PaintMission(card.rectTransform, row.Missions[m]);
             }
         }
@@ -323,9 +323,20 @@ public sealed class TableView : MonoBehaviour
             var button = Ui.Button("Turn" + turn, _rotation, turn.ToString(), fill);
             var x = turn / 4f;
             Ui.Anchored(button.GetComponent<RectTransform>(), new Vector2(x + 0.02f, 0.15f), new Vector2(x + 0.23f, 0.75f), Vector2.zero, Vector2.zero);
-            button.interactable = !snapshot.ConcealVisible && string.IsNullOrEmpty(snapshot.StopMessage);
+            button.interactable = !snapshot.ConcealVisible && string.IsNullOrEmpty(snapshot.StopMessage) && !snapshot.View.HasEnded;
             button.onClick.AddListener(() => QuarterTurnsSelected?.Invoke(chosen));
         }
+    }
+
+    // Four is the ordinary row. One placement can claim both held missions, so a row at three can finish at five and must stay inside its group.
+    private static (Vector2 Min, Vector2 Max) ClaimCardAnchors(int index, int missionCount)
+    {
+        var slots = Math.Max(4, missionCount);
+        const float margin = 0.02f;
+        const float gap = 0.02f;
+        var width = (1f - (2f * margin) - ((slots - 1) * gap)) / slots;
+        var left = margin + (index * (width + gap));
+        return (new Vector2(left, 0.02f), new Vector2(left + width, 0.70f));
     }
 
     private static void PaintTile(RectTransform parent, Tile tile, Vector2 min, Vector2 max, int quarterTurns)

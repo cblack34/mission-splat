@@ -23,6 +23,7 @@ public sealed class TableSession : MonoBehaviour
     private TableStart _start;
     private TableView _view;
     private int _quarterTurns;
+    private int _currentSeatIndex;
     private bool _conceal;
     private string _stop = string.Empty;
 
@@ -67,6 +68,7 @@ public sealed class TableSession : MonoBehaviour
         _start = start;
         _players = BindPlayers(session, start);
         _quarterTurns = 0;
+        _currentSeatIndex = start.FirstSeatIndex;
         _stop = string.Empty;
         EnterCurrentSeat();
         PlayAiUntilHumanOrEnd();
@@ -116,6 +118,11 @@ public sealed class TableSession : MonoBehaviour
             throw new ArgumentOutOfRangeException(nameof(quarterTurns), quarterTurns, "Quarter-turns are 0, 1, 2, or 3.");
         }
 
+        if (IsStarted && (View.HasEnded || !string.IsNullOrEmpty(_stop)))
+        {
+            return;
+        }
+
         _quarterTurns = quarterTurns;
         if (IsStarted)
         {
@@ -141,6 +148,11 @@ public sealed class TableSession : MonoBehaviour
             try
             {
                 chosen = player.ChoosePlacement(view);
+            }
+            catch (UnresolvedRulingException ex)
+            {
+                Stop(ex.Message);
+                return;
             }
             catch (InvalidOperationException ex)
             {
@@ -169,6 +181,7 @@ public sealed class TableSession : MonoBehaviour
         }
 
         _quarterTurns = 0;
+        _currentSeatIndex = (_currentSeatIndex + 1) % _start.SeatCount;
         EnterCurrentSeat();
     }
 
@@ -242,19 +255,12 @@ public sealed class TableSession : MonoBehaviour
         return found;
     }
 
-    private SeatView CurrentView()
-    {
-        var first = _session.View(_start.SeatAt(0));
-        return _session.View(first.CurrentSeat);
-    }
+    // The first seat and each accepted place name the current seat. Asking View for anyone else would copy that seat's unclaimed missions.
+    private SeatView CurrentView() => _session.View(_start.SeatAt(_currentSeatIndex));
 
-    private IPlayer CurrentPlayer()
-    {
-        var seat = CurrentView().CurrentSeat;
-        return _players[_start.IndexOf(seat)];
-    }
+    private IPlayer CurrentPlayer() => _players[_currentSeatIndex];
 
-    private bool CurrentIsAi() => _start.IsAi(_start.IndexOf(CurrentView().CurrentSeat));
+    private bool CurrentIsAi() => _start.IsAi(_currentSeatIndex);
 
     private string Status(SeatView view)
     {
