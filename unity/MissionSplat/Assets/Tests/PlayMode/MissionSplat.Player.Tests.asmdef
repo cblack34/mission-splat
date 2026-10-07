@@ -1,0 +1,25 @@
+{
+    "name": "MissionSplat.Player.Tests",
+    "rootNamespace": "MissionSplat.Player.Tests",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "MissionSplat.Player",
+        "MissionSplat.Game"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "MissionSplat.App.dll",
+        "MissionSplat.Rules.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

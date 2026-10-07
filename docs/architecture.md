@@ -18,9 +18,10 @@ Names are illustrative. The dependency rule is not: Unity consumes Rules and App
 
 ## Components
 
-- **Composition root** (Unity) binds `HumanPlayer` or `AiPlayer` to `LocalSession`.
+- **Composition root** (Unity) binds `HumanPlayer` or `AiPlayer` to `LocalSession`. It collects the seat count, which seats are AI, and the first seat, then starts one session.
 - **HumanPlayer** (Unity) implements `IPlayer` by waiting on a tap.
-- **Table view** (Unity) renders events. It does not decide claims.
+- **Table view** (Unity) renders events. It does not decide claims. Highlights come from `Preview`.
+- **Named table deck** (Unity) is original player content, not the census. Automated play keeps its order. A human session may shuffle it before `Start`. The ordinary win count stays 4.
 - **LocalSession** (App) implements `ISession` in process.
 - **AiPlayer** (App) implements `IPlayer` from its own missions and the public board.
 - **RemoteSession** is not in the POC. When it exists, it implements `ISession` and stays outside Unity.
