@@ -108,10 +108,8 @@ internal sealed class TablePlayView
 
     private void PaintBoard(TableSnapshot snapshot)
     {
-        for (var i = _board.childCount - 1; i >= 1; i--)
-        {
-            UnityEngine.Object.DestroyImmediate(_board.GetChild(i).gameObject);
-        }
+        // Child 0 is the permanent board fill.
+        Ui.Clear(_board, 1);
 
         var view = snapshot.View;
         if (view.Board.Cells.Count == 0)

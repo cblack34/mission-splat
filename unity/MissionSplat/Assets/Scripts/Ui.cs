@@ -75,11 +75,14 @@ internal static class Ui
         rect.offsetMax = offsetMax;
     }
 
-    public static void Clear(Transform parent)
+    public static void Clear(Transform parent, int keepLeading = 0)
     {
-        for (var i = parent.childCount - 1; i >= 0; i--)
+        for (var i = parent.childCount - 1; i >= keepLeading; i--)
         {
-            Object.DestroyImmediate(parent.GetChild(i).gameObject);
+            var child = parent.GetChild(i).gameObject;
+            // Destroy waits until end of frame and would still take a click. DestroyImmediate is edit-mode only.
+            child.SetActive(false);
+            Object.Destroy(child);
         }
     }
 

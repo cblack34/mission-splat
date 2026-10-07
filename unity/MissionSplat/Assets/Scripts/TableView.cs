@@ -141,6 +141,7 @@ public sealed class TableView : MonoBehaviour
             return;
         }
 
+        // Input System 1.19 assigns DefaultInputActions from OnEnable when no actions are set, including touch.
         var go = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
         go.transform.SetParent(transform, false);
     }

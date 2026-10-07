@@ -7,6 +7,7 @@ using MissionSplat.Player;
 using MissionSplat.Rules;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem.UI;
 
 public class TableSessionPlayModeTests
 {
@@ -102,6 +103,21 @@ public class TableSessionPlayModeTests
         Assert.That(safe.anchorMax.y, Is.EqualTo(max.y).Within(0.0001f));
         Assert.That(safe.offsetMin, Is.EqualTo(Vector2.zero));
         Assert.That(safe.offsetMax, Is.EqualTo(Vector2.zero));
+    }
+
+    [Test]
+    public void RuntimeInputModule_BindsPointClickAndSubmit()
+    {
+        _root = new GameObject("Table");
+        _root.AddComponent<TableSession>();
+
+        var module = _root.GetComponentInChildren<InputSystemUIInputModule>(true);
+        Assert.That(module, Is.Not.Null);
+        Assert.That(module.point?.action, Is.Not.Null);
+        Assert.That(module.leftClick?.action, Is.Not.Null);
+        Assert.That(module.submit?.action, Is.Not.Null);
+        Assert.That(module.point.action.bindings.Any(binding => binding.path.Contains("Touchscreen")), Is.True);
+        Assert.That(module.leftClick.action.bindings.Any(binding => binding.path.Contains("Touchscreen")), Is.True);
     }
 
     private RectTransform FindRect(string name)
