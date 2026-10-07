@@ -122,7 +122,7 @@ None.
 Complete once when the final PR is ready for human merge. Do not use this section for WIP status.
 
 - **Outcome:** `unity/MissionSplat` on editor `6000.3.16f1` starts a 2–4 seat game on `LocalSession`. The table shows the board, the pending tile at the chosen quarter-turn, the current human seat's missions after confirm, and every claim row. Highlights come from `Preview`. AI seats use `AiPlayer`.
-- **Verification:** `dotnet test rules/MissionSplat.Rules.sln --configuration Release` passed, 78 tests, 0 failed. `dotnet test app/MissionSplat.App.sln --configuration Release` passed, 15 tests, 0 failed. `unity test unity/MissionSplat --mode PlayMode` passed 1, failed 0. Captures are in `unity/MissionSplat/Assets/Captures/`.
+- **Verification:** `dotnet test rules/MissionSplat.Rules.sln --configuration Release` passed, 78 tests, 0 failed. `dotnet test app/MissionSplat.App.sln --configuration Release` passed, 15 tests, 0 failed. `unity test unity/MissionSplat --mode PlayMode` passed 2, failed 0. Captures are in `unity/MissionSplat/Assets/Captures/`.
 - **Deviations:** Package Manager pinned the URP blank template, including packages the table does not use. The pending tile is drawn with the same clockwise map as placement. `board.png`, `secrets.png`, and `highlights.png` are one post-confirm frame. `claim-row.png` and `conceal-between-humans.png` are one post-place frame.
 - **Unresolved gates or risks:** Rotate, stack-on-top, bounce, and the open rulings in `docs/rules.md`. Uncorrected census rows. Device play. A long game that never claims can still exhaust a deck.
 - **Final PR:** https://github.com/cblack34/mission-splat/pull/12
