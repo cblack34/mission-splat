@@ -6,6 +6,45 @@ using MissionSplat.Rules;
 public class LocalSessionCommandTests
 {
     [Test]
+    public void RejectedFirstStart_ReturnsARejection_AndViewThrows()
+    {
+        var session = new LocalSession();
+
+        var rejected = session.Start(EmptyMatchDeck());
+
+        Assert.That(rejected.IsAccepted, Is.False);
+        Assert.That(rejected.Rejection?.RulesRejection?.Reason, Is.EqualTo(RejectionReason.InvalidSetup));
+        Assert.That(rejected.Rejection?.Message, Is.EqualTo("The match deck needs a starting tile."));
+        Assert.That(rejected.Events, Is.Empty);
+        Assert.That(
+            () => session.View(new SeatId("a")),
+            Throws.InvalidOperationException.With.Message.EqualTo("The session has not started."));
+    }
+
+    [Test]
+    public void RejectedRestart_LeavesTheAcceptedSession_AndPlaceStillWorks()
+    {
+        var session = ClaimingTable.Open(3).Session;
+        var before = session.View(new SeatId("a"));
+        var pending = before.PendingMatchTile?.Id.Value;
+
+        var rejected = session.Start(EmptyMatchDeck());
+
+        Assert.That(rejected.IsAccepted, Is.False);
+        Assert.That(rejected.Rejection?.RulesRejection?.Reason, Is.EqualTo(RejectionReason.InvalidSetup));
+        Assert.That(rejected.Events, Is.Empty);
+
+        var after = session.View(before.CurrentSeat);
+        Assert.That(after.CurrentSeat, Is.EqualTo(before.CurrentSeat));
+        Assert.That(after.Board.Tiles, Has.Count.EqualTo(before.Board.Tiles.Count));
+        Assert.That(after.PendingMatchTile?.Id.Value, Is.EqualTo(pending));
+
+        var placed = session.Place(before.CurrentSeat, new Placement(1, 0, 0));
+        Assert.That(placed.IsAccepted, Is.True, placed.Rejection?.Message);
+        Assert.That(session.View(before.CurrentSeat).Board.Tiles, Has.Count.EqualTo(before.Board.Tiles.Count + 1));
+    }
+
+    [Test]
     public void PlaceFromAnotherSeat_IsRejected_AndTheSessionStays()
     {
         Assert.That(RepresentativeDeck.Label, Is.EqualTo("representative"));
@@ -75,6 +114,20 @@ public class LocalSessionCommandTests
         Assert.That(preview.Rejection?.RulesRejection, Is.Null);
         Assert.That(preview.ClaimedMissions, Is.Empty);
         Assert.That(Take(session), Is.EqualTo(before));
+    }
+
+    private static GameSetup EmptyMatchDeck()
+    {
+        return RepresentativeDeck.Setup(
+            ["a", "b"],
+            "a",
+            [
+                Cards.Mission("a-square", MissionPattern.Square, OrdinaryCatalog.Red),
+                Cards.Row("a-row"),
+                Cards.Mission("b-square", MissionPattern.Square, OrdinaryCatalog.Blue),
+                Cards.Row("b-row"),
+            ],
+            []);
     }
 
     private static SessionPicture Take(LocalSession session)

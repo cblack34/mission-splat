@@ -18,7 +18,7 @@ Claim fixtures are on `main`. The build brief's next consumer is `ISession`, `Lo
 
 ### In scope
 
-- App library and test project, referenced from Rules by project reference, with no Unity reference and no production NuGet dependency.
+- The app library references the rules project, and the app library and test project have no Unity reference and no production NuGet dependency.
 - `ISession`, `IPlayer`, `LocalSession`, and `AiPlayer`.
 - A seat-scoped view: that seat's unclaimed missions, every seat's claims, the public board, whose turn it is, whether the game has ended, and the tile the next placement will consume.
 - A rules read of that one pending match tile, including its four cells. The rest of either deck stays hidden.

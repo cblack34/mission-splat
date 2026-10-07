@@ -13,6 +13,7 @@ public sealed class LocalSession : ISession
         var result = Game.Start(setup);
         if (!result.IsAccepted)
         {
+            // A rejected setup is not installed. Clearing an accepted session would make this rejection destructive, unlike Place.
             return SessionResult.Reject(Required(result.Rejection));
         }
 
