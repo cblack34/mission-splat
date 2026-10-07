@@ -8,6 +8,7 @@ using MissionSplat.Rules;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem.UI;
+using UnityEngine.UI;
 
 public class TableSessionPlayModeTests
 {
@@ -106,6 +107,24 @@ public class TableSessionPlayModeTests
     }
 
     [Test]
+    public void StatusStopTextWrapsInsideItsRect()
+    {
+        _root = new GameObject("Table");
+        _root.AddComponent<TableSession>();
+
+        var status = FindText("Status");
+        var confirm = FindRect("Confirm");
+        Assert.That(status, Is.Not.Null);
+        Assert.That(confirm, Is.Not.Null);
+        Assert.That(status.horizontalOverflow, Is.EqualTo(HorizontalWrapMode.Wrap));
+        Assert.That(confirm.GetComponentInChildren<Text>(true).horizontalOverflow, Is.EqualTo(HorizontalWrapMode.Overflow));
+
+        status.transform.parent.gameObject.SetActive(true);
+        Canvas.ForceUpdateCanvases();
+        Assert.That(status.rectTransform.rect.height, Is.GreaterThan(status.fontSize));
+    }
+
+    [Test]
     public void RuntimeInputModule_BindsPointClickAndSubmit()
     {
         _root = new GameObject("Table");
@@ -127,6 +146,19 @@ public class TableSessionPlayModeTests
             if (rect.name == name)
             {
                 return rect;
+            }
+        }
+
+        return null;
+    }
+
+    private Text FindText(string name)
+    {
+        foreach (var text in _root.GetComponentsInChildren<Text>(true))
+        {
+            if (text.name == name)
+            {
+                return text;
             }
         }
 

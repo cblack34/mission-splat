@@ -25,6 +25,8 @@ internal sealed class TablePlayView
     public TablePlayView(RectTransform play)
     {
         _status = Ui.Label("Status", play, 28, SplatPalette.Ink, TextAnchor.MiddleLeft);
+        // Stop rulings are long sentences. Only this label wraps; captions and buttons stay on one line.
+        _status.horizontalOverflow = HorizontalWrapMode.Wrap;
         Ui.Anchored(_status.rectTransform, new Vector2(0.02f, 0.92f), new Vector2(0.98f, 0.99f), Vector2.zero, Vector2.zero);
 
         _pending = Ui.Rect("Pending", play);
