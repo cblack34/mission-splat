@@ -12,7 +12,21 @@ public sealed class Tile
 
     public TileId Id { get; }
 
-    internal Cell Local(int x, int y) => _cells[x + (2 * y)];
+    // Public so the pending-tile read can show this tile's cells without the rest of either deck.
+    public Cell Local(int x, int y)
+    {
+        if (x is < 0 or > 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(x), x, "A tile cell is at local x 0 or 1.");
+        }
+
+        if (y is < 0 or > 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(y), y, "A tile cell is at local y 0 or 1.");
+        }
+
+        return _cells[x + (2 * y)];
+    }
 
     internal (int X, int Y, Cell Value)[] CellsAt(int tileX, int tileY, int quarterTurnsClockwise)
     {
