@@ -12,8 +12,14 @@ using UnityEngine.UI;
 public sealed class TableView : MonoBehaviour
 {
     private RectTransform _root;
+    private RectTransform _safe;
     private RectTransform _play;
     private RectTransform _setup;
+    private Rect _seenSafeArea;
+    private int _seenScreenWidth;
+    private int _seenScreenHeight;
+    private ScreenOrientation _seenOrientation;
+    private bool _seenSafeAreaFrame;
     private Text _status;
     private RectTransform _pending;
     private RectTransform _secrets;
@@ -34,6 +40,15 @@ public sealed class TableView : MonoBehaviour
         PaintCamera();
         BuildCanvas();
         ShowSetup(TableStart.PassAndPlayDraft());
+    }
+
+    // The overlay canvas does not track Screen.safeArea, so the inset is reapplied when it changes.
+    private void Update()
+    {
+        if (_safe != null && SafeAreaChanged())
+        {
+            ApplySafeArea();
+        }
     }
 
     private static void PaintCamera()
@@ -90,7 +105,9 @@ public sealed class TableView : MonoBehaviour
         var background = Ui.Image("Background", _root, SplatPalette.Cream);
         Ui.Stretch(background.rectTransform);
 
-        _play = Ui.Rect("Play", _root);
+        _safe = Ui.Rect("SafeArea", _root);
+        ApplySafeArea();
+        _play = Ui.Rect("Play", _safe);
         Ui.Stretch(_play);
         _status = Ui.Label("Status", _play, 28, SplatPalette.Ink, TextAnchor.MiddleLeft);
         Ui.Anchored(_status.rectTransform, new Vector2(0.02f, 0.92f), new Vector2(0.98f, 0.99f), Vector2.zero, Vector2.zero);
@@ -121,9 +138,43 @@ public sealed class TableView : MonoBehaviour
         confirm.onClick.AddListener(() => Confirmed?.Invoke());
         _conceal.gameObject.SetActive(false);
 
-        _setup = Ui.Rect("Setup", _root);
+        _setup = Ui.Rect("Setup", _safe);
         Ui.Stretch(_setup);
         _play.gameObject.SetActive(false);
+    }
+
+    private bool SafeAreaChanged() =>
+        !_seenSafeAreaFrame
+        || Screen.safeArea != _seenSafeArea
+        || Screen.width != _seenScreenWidth
+        || Screen.height != _seenScreenHeight
+        || Screen.orientation != _seenOrientation;
+
+    private void ApplySafeArea()
+    {
+        var safe = Screen.safeArea;
+        var width = Screen.width;
+        var height = Screen.height;
+        _seenSafeArea = safe;
+        _seenScreenWidth = width;
+        _seenScreenHeight = height;
+        _seenOrientation = Screen.orientation;
+        _seenSafeAreaFrame = true;
+        if (width <= 0 || height <= 0 || safe.width <= 0f || safe.height <= 0f)
+        {
+            Ui.Stretch(_safe);
+            return;
+        }
+
+        var min = new Vector2(Mathf.Clamp01(safe.xMin / width), Mathf.Clamp01(safe.yMin / height));
+        var max = new Vector2(Mathf.Clamp01(safe.xMax / width), Mathf.Clamp01(safe.yMax / height));
+        if (max.x <= min.x || max.y <= min.y)
+        {
+            Ui.Stretch(_safe);
+            return;
+        }
+
+        Ui.Anchored(_safe, min, max, Vector2.zero, Vector2.zero);
     }
 
     private void RebuildSetup()

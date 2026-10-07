@@ -57,5 +57,64 @@ public class TableSessionPlayModeTests
         Assert.That(table.Snapshot.ConcealVisible, Is.True);
         Assert.That(table.Snapshot.SecretsVisible, Is.False);
     }
+
+    [Test]
+    public void InteractiveLayoutsSitInsideTheReportedSafeArea()
+    {
+        _root = new GameObject("Table");
+        _root.AddComponent<TableSession>();
+
+        var canvas = FindRect("Canvas");
+        var safe = FindRect("SafeArea");
+        var play = FindRect("Play");
+        var setup = FindRect("Setup");
+        var background = FindRect("Background");
+        Assert.That(canvas, Is.Not.Null);
+        Assert.That(safe, Is.Not.Null);
+        Assert.That(play, Is.Not.Null);
+        Assert.That(setup, Is.Not.Null);
+        Assert.That(background, Is.Not.Null);
+        Assert.That(play.transform.parent, Is.SameAs(safe.transform));
+        Assert.That(setup.transform.parent, Is.SameAs(safe.transform));
+        Assert.That(background.transform.parent, Is.SameAs(canvas.transform));
+
+        var width = Screen.width;
+        var height = Screen.height;
+        var area = Screen.safeArea;
+        if (width <= 0 || height <= 0 || area.width <= 0f || area.height <= 0f)
+        {
+            Assert.That(safe.anchorMin, Is.EqualTo(Vector2.zero));
+            Assert.That(safe.anchorMax, Is.EqualTo(Vector2.one));
+            return;
+        }
+
+        var min = new Vector2(Mathf.Clamp01(area.xMin / width), Mathf.Clamp01(area.yMin / height));
+        var max = new Vector2(Mathf.Clamp01(area.xMax / width), Mathf.Clamp01(area.yMax / height));
+        if (max.x <= min.x || max.y <= min.y)
+        {
+            min = Vector2.zero;
+            max = Vector2.one;
+        }
+
+        Assert.That(safe.anchorMin.x, Is.EqualTo(min.x).Within(0.0001f));
+        Assert.That(safe.anchorMin.y, Is.EqualTo(min.y).Within(0.0001f));
+        Assert.That(safe.anchorMax.x, Is.EqualTo(max.x).Within(0.0001f));
+        Assert.That(safe.anchorMax.y, Is.EqualTo(max.y).Within(0.0001f));
+        Assert.That(safe.offsetMin, Is.EqualTo(Vector2.zero));
+        Assert.That(safe.offsetMax, Is.EqualTo(Vector2.zero));
+    }
+
+    private RectTransform FindRect(string name)
+    {
+        foreach (var rect in _root.GetComponentsInChildren<RectTransform>(true))
+        {
+            if (rect.name == name)
+            {
+                return rect;
+            }
+        }
+
+        return null;
+    }
 }
 }
