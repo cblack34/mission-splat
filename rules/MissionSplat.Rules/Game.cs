@@ -42,8 +42,8 @@ public sealed class Game
 
     public int MatchDeckRemaining => _matchDeck.Length;
 
-    // The tile the next Place will consume. Null when none remains; Place still refuses that empty deck.
-    public Tile? PendingMatchTile => _matchDeck.Length == 0 ? null : _matchDeck[0];
+    // The tile the next Place will consume. Null when the game has ended or none remains; Place still refuses that empty deck.
+    public Tile? PendingMatchTile => _hasEnded || _matchDeck.Length == 0 ? null : _matchDeck[0];
 
     public IReadOnlyList<SeatId> SeatsInTurnOrder
     {

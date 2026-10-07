@@ -1,7 +1,5 @@
 namespace MissionSplat.App.Tests;
 
-using System.Collections;
-using System.Reflection;
 using MissionSplat.App;
 using MissionSplat.Rules;
 
@@ -15,8 +13,8 @@ public class SeatViewTests
 
         var before = session.View(new SeatId("a"));
         Assert.That(Ids(before.UnclaimedMissions), Is.EqualTo(new[] { "a-square", "a-row" }));
-        Assert.That(MissionIdsIn(before), Does.Contain("a-square"));
-        Assert.That(MissionIdsIn(before), Does.Contain("a-row"));
+        Assert.That(MissionIds.In(before), Does.Contain("a-square"));
+        Assert.That(MissionIds.In(before), Does.Contain("a-row"));
         Assert.That(before.Claims.Select(row => row.Seat.Value), Is.EqualTo(new[] { "a", "b", "c" }));
         Assert.That(before.Claims.Select(row => row.Missions.Count), Is.All.EqualTo(0));
         Assert.That(before.CurrentSeat, Is.EqualTo(new SeatId("a")));
@@ -71,7 +69,7 @@ public class SeatViewTests
 
     private static void AssertAbsent(SeatView view, params string[] missionIds)
     {
-        var present = MissionIdsIn(view);
+        var present = MissionIds.In(view);
         foreach (var missionId in missionIds)
         {
             Assert.That(present, Does.Not.Contain(missionId));
@@ -83,70 +81,4 @@ public class SeatViewTests
 
     private static string[] ClaimIds(SeatView view, string seat) =>
         Ids(view.Claims.Single(row => row.Seat.Value == seat).Missions);
-
-    private static HashSet<string> MissionIdsIn(object root)
-    {
-        var ids = new HashSet<string>();
-        var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
-        Walk(root, ids, seen);
-        return ids;
-    }
-
-    private static void Walk(object? value, ISet<string> ids, ISet<object> seen)
-    {
-        if (value is null)
-        {
-            return;
-        }
-
-        switch (value)
-        {
-            case MissionId mission:
-                ids.Add(mission.Value);
-                return;
-            case Mission mission:
-                ids.Add(mission.Id.Value);
-                return;
-            case string text:
-                ids.Add(text);
-                return;
-            case Cell:
-            case SeatId:
-            case TileId:
-            case ColorId:
-            case SymbolId:
-                return;
-        }
-
-        var type = value.GetType();
-        if (type.IsPrimitive || type.IsEnum)
-        {
-            return;
-        }
-
-        if (value is IEnumerable enumerable)
-        {
-            if (!seen.Add(value))
-            {
-                return;
-            }
-
-            foreach (var item in enumerable)
-            {
-                Walk(item, ids, seen);
-            }
-
-            return;
-        }
-
-        if (type.IsClass && !seen.Add(value))
-        {
-            return;
-        }
-
-        foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-        {
-            Walk(field.GetValue(value), ids, seen);
-        }
-    }
 }

@@ -49,4 +49,37 @@ public class PendingMatchTileTests
         Assert.That(game.MatchDeckRemaining, Is.EqualTo(0));
         Assert.That(game.PendingMatchTile, Is.Null);
     }
+
+    [Test]
+    public void EndedGame_WithTilesRemaining_ReportsNoPendingTile()
+    {
+        var next = Cards.Solid("next", Cards.Red);
+        var later = Cards.BlankTile("later");
+        var game = RepresentativeDeck.Start(
+            ["a", "b"],
+            "a",
+            [
+                Cards.Mission("red-square", MissionPattern.Square, OrdinaryCatalog.Red),
+                Cards.Purple("a2"),
+                Cards.Purple("b1"),
+                Cards.Purple("b2"),
+                Cards.Purple("spare"),
+            ],
+            [Cards.BlankTile("start"), next, later],
+            claimsRequiredToWin: 1);
+
+        Assert.That(game.HasEnded, Is.False);
+        Assert.That(game.PendingMatchTile, Is.Not.Null);
+        Assert.That(game.PendingMatchTile!.Id, Is.EqualTo(next.Id));
+        Assert.That(game.MatchDeckRemaining, Is.EqualTo(2));
+
+        var won = See.Game(RepresentativeDeck.Play(game, 1, 0));
+
+        Assert.That(won.HasEnded, Is.True);
+        Assert.That(won.Claims(Cards.Seat("a")), Has.Count.EqualTo(1));
+        Assert.That(won.MatchDeckRemaining, Is.EqualTo(1));
+        Assert.That(won.PendingMatchTile, Is.Null);
+        Assert.That(game.HasEnded, Is.False);
+        Assert.That(game.PendingMatchTile!.Id, Is.EqualTo(next.Id));
+    }
 }
