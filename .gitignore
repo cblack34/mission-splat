@@ -648,6 +648,7 @@ $RECYCLE.BIN/
 *.csproj
 *.unityproj
 *.sln
+*.slnx
 *.suo
 *.tmp
 *.user
