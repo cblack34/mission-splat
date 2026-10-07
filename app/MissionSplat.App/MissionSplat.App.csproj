@@ -11,8 +11,8 @@
     <ProjectReference Include="..\..\rules\MissionSplat.Rules\MissionSplat.Rules.csproj" />
   </ItemGroup>
 
-  <!-- The app output already contains Rules, so one copy publishes both assemblies for this configuration. -->
-  <Target Name="CopyGameAssemblies" AfterTargets="Build">
+  <!-- Release output already contains Rules, so one copy publishes both assemblies. A Debug build must not replace those DLLs. -->
+  <Target Name="CopyGameAssemblies" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <PropertyGroup>
       <GamePackagePlugins>$(MSBuildThisFileDirectory)..\..\packages\com.mission-splat.game\Runtime\Plugins\</GamePackagePlugins>
     </PropertyGroup>

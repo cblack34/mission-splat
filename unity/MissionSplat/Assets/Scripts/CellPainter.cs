@@ -73,13 +73,18 @@ internal static class CellPainter
             return;
         }
 
-        var mark = Ui.Label("Mark", parent, 22, Color.white, TextAnchor.MiddleCenter);
-        Ui.Stretch(mark.rectTransform);
         if (symbol.Value == OrdinaryCatalog.Rotate.Value)
         {
-            mark.text = "o";
+            // power-ups.svg draws an open clockwise arrow. The builtin font has no such glyph.
+            var arrow = Ui.Image("Rotate", parent, Color.white, RotateArrow);
+            arrow.preserveAspect = true;
+            Ui.Anchored(arrow.rectTransform, new Vector2(0.12f, 0.12f), new Vector2(0.88f, 0.88f), Vector2.zero, Vector2.zero);
+            return;
         }
-        else if (symbol.Value == OrdinaryCatalog.Stack.Value)
+
+        var mark = Ui.Label("Mark", parent, 22, Color.white, TextAnchor.MiddleCenter);
+        Ui.Stretch(mark.rectTransform);
+        if (symbol.Value == OrdinaryCatalog.Stack.Value)
         {
             mark.text = "+";
         }
@@ -92,6 +97,83 @@ internal static class CellPainter
             mark.text = symbol.Value.Substring(0, 1);
         }
     }
+
+    private const float RotateRadius = 17.5f;
+
+    private const float RotateHalfStroke = 2.8f;
+
+    private const float RotateSweep = 220f * Mathf.Deg2Rad;
+
+    private static readonly Sprite RotateArrow = BuildRotateArrow();
+
+    private static Sprite BuildRotateArrow()
+    {
+        const int size = 64;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var center = (size - 1) / 2f;
+        var (tip, baseLeft, baseRight) = RotateHead(center);
+        for (var y = 0; y < size; y++)
+        {
+            for (var x = 0; x < size; x++)
+            {
+                var ink = OnRotateStroke(x, y, center) || InTriangle(x, y, tip, baseLeft, baseRight);
+                texture.SetPixel(x, y, ink ? Color.white : Color.clear);
+            }
+        }
+
+        texture.Apply();
+        texture.filterMode = FilterMode.Bilinear;
+        texture.hideFlags = HideFlags.HideAndDontSave;
+        return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+    }
+
+    private static bool OnRotateStroke(int x, int y, float center)
+    {
+        var dx = x - center;
+        var dy = y - center;
+        var distance = Mathf.Sqrt((dx * dx) + (dy * dy));
+        if (Mathf.Abs(distance - RotateRadius) > RotateHalfStroke)
+        {
+            return false;
+        }
+
+        return ClockwiseFromTop(Mathf.Atan2(dy, dx)) <= RotateSweep;
+    }
+
+    private static float ClockwiseFromTop(float angle)
+    {
+        var span = (Mathf.PI / 2f) - angle;
+        if (span < 0f)
+        {
+            span += Mathf.PI * 2f;
+        }
+
+        return span;
+    }
+
+    private static (Vector2 Tip, Vector2 BaseLeft, Vector2 BaseRight) RotateHead(float center)
+    {
+        var theta = (Mathf.PI / 2f) - RotateSweep;
+        var forward = new Vector2(Mathf.Sin(theta), -Mathf.Cos(theta));
+        var radial = new Vector2(Mathf.Cos(theta), Mathf.Sin(theta));
+        var origin = new Vector2(center, center) + (radial * RotateRadius);
+        var back = origin - (forward * 6f);
+        var side = new Vector2(-forward.y, forward.x) * 7.5f;
+        return (origin + (forward * 10f), back + side, back - side);
+    }
+
+    private static bool InTriangle(int x, int y, Vector2 tip, Vector2 baseLeft, Vector2 baseRight)
+    {
+        var point = new Vector2(x, y);
+        var ab = Cross(baseLeft - tip, point - tip);
+        var bc = Cross(baseRight - baseLeft, point - baseLeft);
+        var ca = Cross(tip - baseRight, point - baseRight);
+        var positive = ab >= 0f && bc >= 0f && ca >= 0f;
+        var negative = ab <= 0f && bc <= 0f && ca <= 0f;
+        return positive || negative;
+    }
+
+    private static float Cross(Vector2 u, Vector2 v) => (u.x * v.y) - (u.y * v.x);
 
     private static void Dot(RectTransform parent, Color color)
     {
