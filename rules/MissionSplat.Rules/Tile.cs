@@ -45,7 +45,7 @@ public sealed class Tile
     }
 
     // Y increases upward. One clockwise quarter-turn sends (x, y) to (y, 1 - x).
-    private static (int X, int Y) TurnClockwise(int x, int y, int quarterTurnsClockwise) =>
+    internal static (int X, int Y) TurnClockwise(int x, int y, int quarterTurnsClockwise) =>
         quarterTurnsClockwise switch
         {
             0 => (x, y),

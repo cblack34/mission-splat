@@ -67,7 +67,7 @@ The ordinary win count is 4. Setup can require a different positive count. The f
 
 A power is printed on the tile that was drawn. Using it is optional unless a later ruling says otherwise. The photographs describe these effects. See [`diagrams/power-ups.svg`](diagrams/power-ups.svg).
 
-- **Rotate.** Turn any tile on the board 90 degrees, any number of quarter-turns, if that tile is not completely surrounded. Assumption: completely surrounded means all four orthogonal neighbors are occupied.
+- **Rotate.** After the drawn tile is set down, and before claims, each rotate cell on that tile may turn one tile on the board by one, two, or three clockwise quarter-turns if that tile is not completely surrounded. Completely surrounded means all four orthogonal neighbors are occupied. Only the chosen tile's visible cells turn. Claims read the four cells the placed tile wrote, after those turns. Turning a different tile does not award a claim from that tile's cells.
 - **Stack.** Place the drawn tile on top of any tile on the board instead of beside it. The top tile's cells are the cells that match at that position. The covered tiles remain under that position. Uncovering them is still unresolved.
 - **Bounce.** Remove one tile from the board and put it on the bottom of the draw deck. Do not remove the starting tile if it is the only tile, unless the user later rules otherwise. That edge is open.
 - **Blank.** No effect.
@@ -86,5 +86,5 @@ These are open. Do not invent a ruling in code without returning to the user.
 - Whether a stack buries the covered tile for the rest of the game or only while covered.
 - Bounce of the last remaining tile.
 - A drawn tile that has no legal orthogonal neighbor and no stack power.
-- A pattern completed by rotate, stack, or bounce rather than by the placed tile's own cells: whether the acting seat may claim it.
+- A pattern completed by stack or bounce rather than by the placed tile's own cells: whether the acting seat may claim it.
 - Mission deck exhausted when a replacement is due, and match-tile deck exhausted on a draw: not printed. Return to the user.
