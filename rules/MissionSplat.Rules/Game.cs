@@ -42,7 +42,8 @@ public sealed class Game
 
     public int MatchDeckRemaining => _matchDeck.Length;
 
-    // The tile the next Place, PlaceWithRotates, or Stack will consume. Null when the game has ended or none remains; any of those commands still refuses that empty deck.
+    // The tile the next Place, PlaceWithRotates, Stack, or PlaceWithBounces will consume. Null when the game has
+    // ended or none remains; any of those commands still refuses that empty deck.
     public Tile? PendingMatchTile => _hasEnded || _matchDeck.Length == 0 ? null : _matchDeck[0];
 
     public IReadOnlyList<SeatId> SeatsInTurnOrder
@@ -98,7 +99,7 @@ public sealed class Game
             tileX,
             tileY,
             quarterTurnsClockwise,
-            _grid.Place(tileX, tileY, tile.Id, located),
+            _grid.Place(tileX, tileY, tile, located),
             located);
     }
 
@@ -141,13 +142,64 @@ public sealed class Game
             return blockedTarget;
         }
 
-        var grid = _grid.Place(tileX, tileY, tile.Id, located);
+        var grid = _grid.Place(tileX, tileY, tile, located);
         foreach (var use in rotates)
         {
             grid = grid.TurnClockwise(use.TileX, use.TileY, use.QuarterTurnsClockwise);
         }
 
         return ResolvePlacement(tile, tileX, tileY, quarterTurnsClockwise, grid, located);
+    }
+
+    // The tile just placed is never a legal bounce target, even though this command never stacks.
+    // Drawn bounce cells are spent here, after the tile is down and before the claim.
+    public CommandResult PlaceWithBounces(
+        int tileX,
+        int tileY,
+        int quarterTurnsClockwise,
+        IReadOnlyList<BounceUse> bounces)
+    {
+        if (bounces is null)
+        {
+            throw new ArgumentNullException(nameof(bounces));
+        }
+
+        var unplayable = RejectBeforeConsumingMatchTile(quarterTurnsClockwise);
+        if (unplayable is not null)
+        {
+            return unplayable;
+        }
+
+        var tile = _matchDeck[0];
+        var blockedUses = RejectBounceUses(tile, bounces);
+        if (blockedUses is not null)
+        {
+            return blockedUses;
+        }
+
+        var located = tile.CellsAt(tileX, tileY, quarterTurnsClockwise);
+        var blocked = RejectBlockedSide(tileX, tileY, located);
+        if (blocked is not null)
+        {
+            return blocked;
+        }
+
+        var blockedTarget = RejectBounceTargets(tileX, tileY, bounces);
+        if (blockedTarget is not null)
+        {
+            return blockedTarget;
+        }
+
+        var grid = _grid.Place(tileX, tileY, tile, located);
+        var returned = new Tile[bounces.Count];
+        for (var i = 0; i < bounces.Count; i++)
+        {
+            var (nextGrid, removed) = grid.Bounce(bounces[i].TileX, bounces[i].TileY);
+            grid = nextGrid;
+            returned[i] = removed;
+        }
+
+        return ResolvePlacement(tile, tileX, tileY, quarterTurnsClockwise, grid, located, returned);
     }
 
     // One or more stack cells allow this once. Place still refuses the same occupied cell.
@@ -176,7 +228,7 @@ public sealed class Game
             tileX,
             tileY,
             quarterTurnsClockwise,
-            _grid.Cover(tileX, tileY, tile.Id, located),
+            _grid.Cover(tileX, tileY, tile, located),
             located);
     }
 
@@ -225,7 +277,7 @@ public sealed class Game
         return false;
     }
 
-    // Place, PlaceWithRotates, and Stack consume the front match tile. An empty deck is the same open ruling for each.
+    // Place, PlaceWithRotates, Stack, and PlaceWithBounces consume the front match tile. An empty deck is the same open ruling for each.
     private CommandResult? RejectBeforeConsumingMatchTile(int quarterTurnsClockwise)
     {
         if (_hasEnded)
@@ -253,7 +305,8 @@ public sealed class Game
         int tileY,
         int quarterTurnsClockwise,
         Grid nextGrid,
-        IReadOnlyList<(int X, int Y, Cell Value)> located)
+        IReadOnlyList<(int X, int Y, Cell Value)> located,
+        IReadOnlyList<Tile>? returnedToMatchDeck = null)
     {
         var written = new HashSet<CellCoord>(located.Count);
         foreach (var (x, y, _) in located)
@@ -293,13 +346,26 @@ public sealed class Game
             events.Add(new GameWon(acting.Id, claims.Count));
         }
 
+        var matchDeck = _matchDeck[1..];
+        if (returnedToMatchDeck is { Count: > 0 })
+        {
+            var extended = new Tile[matchDeck.Length + returnedToMatchDeck.Count];
+            Array.Copy(matchDeck, extended, matchDeck.Length);
+            for (var i = 0; i < returnedToMatchDeck.Count; i++)
+            {
+                extended[matchDeck.Length + i] = returnedToMatchDeck[i];
+            }
+
+            matchDeck = extended;
+        }
+
         var seats = (SeatSnapshot[])_seats.Clone();
         seats[_currentIndex] = new SeatSnapshot(acting.Id, hand.ToArray(), claims.ToArray());
         var next = new Game(
             seats,
             (_currentIndex + 1) % seats.Length,
             missionDeck.ToArray(),
-            _matchDeck[1..],
+            matchDeck,
             nextGrid,
             _patterns,
             ClaimsRequiredToWin,
@@ -375,6 +441,62 @@ public sealed class Game
             {
                 return Reject(RejectionReason.TileSurrounded, "That tile is completely surrounded.");
             }
+        }
+
+        return null;
+    }
+
+    private CommandResult? RejectBounceUses(Tile tile, IReadOnlyList<BounceUse> bounces)
+    {
+        if (bounces.Count == 0)
+        {
+            return Reject(RejectionReason.NoBounceUse, "Bounce placement needs at least one use.");
+        }
+
+        var charges = CountSymbol(tile, OrdinaryCatalog.Bounce);
+        if (charges == 0)
+        {
+            return Reject(RejectionReason.NoBounceCell, "The drawn tile has no bounce cell.");
+        }
+
+        if (bounces.Count > charges)
+        {
+            return Reject(
+                RejectionReason.TooManyBounceUses,
+                "The drawn tile does not have a bounce cell for every use.");
+        }
+
+        return null;
+    }
+
+    // The tile just placed is checked first: it is never on the grid yet, so HasTile alone cannot tell that
+    // case apart from a genuinely empty position. Remaining layers are tracked per target across the uses in
+    // this command, so a second use on an already-emptied single-layer position is rejected the same way as
+    // a position that never had a tile, rather than throwing once the grid actually mutates.
+    private CommandResult? RejectBounceTargets(int placedX, int placedY, IReadOnlyList<BounceUse> bounces)
+    {
+        var remainingLayers = new Dictionary<TileCoord, int>();
+        foreach (var use in bounces)
+        {
+            if (use.TileX == placedX && use.TileY == placedY)
+            {
+                return Reject(
+                    RejectionReason.CannotBounceJustPlacedTile,
+                    "The tile just placed cannot be bounced on the same turn.");
+            }
+
+            var coord = new TileCoord(use.TileX, use.TileY);
+            if (!remainingLayers.TryGetValue(coord, out var layers))
+            {
+                layers = _grid.LayerCountAt(use.TileX, use.TileY);
+            }
+
+            if (layers == 0)
+            {
+                return Reject(RejectionReason.NoTileToBounce, "There is no tile at that position to bounce.");
+            }
+
+            remainingLayers[coord] = layers - 1;
         }
 
         return null;

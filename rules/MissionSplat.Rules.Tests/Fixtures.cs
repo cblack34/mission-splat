@@ -73,6 +73,18 @@ internal static class RepresentativeDeck
         Assert.That(result.IsAccepted, Is.True, result.Rejection?.Message);
         return result;
     }
+
+    public static CommandResult Bounce(
+        Game game,
+        int tileX,
+        int tileY,
+        IReadOnlyList<BounceUse> bounces,
+        int quarterTurns = 0)
+    {
+        var result = game.PlaceWithBounces(tileX, tileY, quarterTurns, bounces);
+        Assert.That(result.IsAccepted, Is.True, result.Rejection?.Message);
+        return result;
+    }
 }
 
 internal static class Cards
