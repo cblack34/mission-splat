@@ -54,6 +54,13 @@ internal static class RepresentativeDeck
         Assert.That(result.IsAccepted, Is.True, result.Rejection?.Message);
         return result;
     }
+
+    public static CommandResult Stack(Game game, int tileX, int tileY, int quarterTurns = 0)
+    {
+        var result = game.Stack(tileX, tileY, quarterTurns);
+        Assert.That(result.IsAccepted, Is.True, result.Rejection?.Message);
+        return result;
+    }
 }
 
 internal static class Cards

@@ -7,6 +7,8 @@ public enum RejectionReason
     CellOccupied,
     GameOver,
     InvalidQuarterTurns,
+    NoStackCell,
+    NoTileToCover,
 }
 
 public sealed record Rejection(RejectionReason Reason, string Message);
