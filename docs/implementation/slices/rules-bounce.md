@@ -3,7 +3,7 @@
 ## Strategic source
 
 - **Active build pack:** [`docs/build-brief.md`](../../build-brief.md), [`docs/rules.md`](../../rules.md), [`docs/architecture.md`](../../architecture.md), [`docs/acceptance.md`](../../acceptance.md), [`docs/engineering/workflow.md`](../../engineering/workflow.md), [`docs/engineering/code-quality.md`](../../engineering/code-quality.md)
-- **Human approval:** Approved in session on 2026-10-08. Bounce is the only power left unplayed. Bouncing a stacked position peels only its top tile and reveals the tile beneath with its original cells restored. Self-bounce and the now-unreachable board-emptying case both throw `UnresolvedRulingException`.
+- **Human approval:** Approved in session on 2026-10-08. Bounce is the only power left unplayed. Bouncing a stacked position peels only its top tile and reveals the tile beneath with its original cells restored. Self-bounce is rejected via `CommandResult.Reject`, the same mechanism as `TileSurrounded` or `NoTileToRotate` — it is a resolved illegal move, not a gap `UnresolvedRulingException` is reserved for. Board-emptying is consequently unreachable and has no check in code.
 - **Final acceptance advanced:** The bounce check in [`docs/acceptance.md`](../../acceptance.md): board count drops by one on a single-layer bounce, the removed tile is the last element of the draw deck, and the order of the other deck tiles is unchanged. A new sentence on the same line covers the stacked case: tile count is unchanged and the layer beneath becomes visible with its original cells. Rotate and stack stay as they are.
 
 ## Outcome
@@ -52,7 +52,7 @@ Stack (#14) and rotate (#16) are on `main`. Bounce is the only power with no cod
 ### Hard gates
 
 - Orthogonal placement, the written-cell claim rule, `OrdinaryCatalog.Bounce`, `Stack`, and `PlaceWithRotates` are on `main`.
-- The human-approved rulings above: stacked bounce peels and reveals; self-bounce throws; board-emptying is consequently unreachable and is not a case to implement a check for.
+- The human-approved rulings above: stacked bounce peels and reveals; self-bounce is rejected; board-emptying is consequently unreachable and is not a case to implement a check for.
 
 ### Sequencing recommendations
 
@@ -81,7 +81,7 @@ The three-argument `Place` declines bounce, rejects overlap, claims from the cel
 
 - Stop if bounce only works by making the three-argument `Place`, `Stack`, or `PlaceWithRotates` hold the turn open differently than they do today.
 - Stop if a reveal has to be re-derived from placement-time orientation instead of a covered-time snapshot — that would require a wider `Grid` or `Tile` change than approved here.
-- Stop if self-bounce turns out to be needed for a legal line of play discovered during fixtures; return to the human rather than relaxing the throw.
+- Stop if self-bounce turns out to be needed for a legal line of play discovered during fixtures; return to the human rather than relaxing the rejection.
 - Stop if `ISession` or the Unity table has to change to keep the current game compiling.
 
 ## Execution issues
