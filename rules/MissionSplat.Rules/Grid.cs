@@ -95,6 +95,44 @@ internal sealed class Grid
         return new Grid(cells, tiles, covered);
     }
 
+    // Occupied cells cannot be Add-ed. Replacing the four visible values leaves buried tiles under this position.
+    public Grid TurnClockwise(int tileX, int tileY, int quarterTurnsClockwise)
+    {
+        if (!_tiles.ContainsKey(new TileCoord(tileX, tileY)))
+        {
+            throw new InvalidOperationException("Rotate turns a tile already on the board.");
+        }
+
+        var moved = new Cell[4];
+        for (var y = 0; y < 2; y++)
+        {
+            for (var x = 0; x < 2; x++)
+            {
+                if (!_cells.TryGetValue(new CellCoord((tileX * 2) + x, (tileY * 2) + y), out var value))
+                {
+                    throw new InvalidOperationException("A board tile is missing one of its cells.");
+                }
+
+                moved[x + (2 * y)] = value;
+            }
+        }
+
+        var cells = new Dictionary<CellCoord, Cell>(_cells);
+        for (var y = 0; y < 2; y++)
+        {
+            for (var x = 0; x < 2; x++)
+            {
+                var (turnedX, turnedY) = Tile.TurnClockwise(x, y, quarterTurnsClockwise);
+                cells[new CellCoord((tileX * 2) + turnedX, (tileY * 2) + turnedY)] = moved[x + (2 * y)];
+            }
+        }
+
+        return new Grid(
+            cells,
+            new Dictionary<TileCoord, TileId>(_tiles),
+            new Dictionary<TileCoord, TileId[]>(_covered));
+    }
+
     public static Grid FromStart(Tile tile)
     {
         var located = tile.CellsAt(0, 0, 0);

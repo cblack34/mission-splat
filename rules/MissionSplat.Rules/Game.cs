@@ -42,7 +42,7 @@ public sealed class Game
 
     public int MatchDeckRemaining => _matchDeck.Length;
 
-    // The tile the next Place or Stack will consume. Null when the game has ended or none remains; either command still refuses that empty deck.
+    // The tile the next Place, PlaceWithRotates, or Stack will consume. Null when the game has ended or none remains; any of those commands still refuses that empty deck.
     public Tile? PendingMatchTile => _hasEnded || _matchDeck.Length == 0 ? null : _matchDeck[0];
 
     public IReadOnlyList<SeatId> SeatsInTurnOrder
@@ -87,18 +87,10 @@ public sealed class Game
 
         var tile = _matchDeck[0];
         var located = tile.CellsAt(tileX, tileY, quarterTurnsClockwise);
-
-        // Covering a tile is Stack. Overlap stays illegal here even when the drawn tile shows stack.
-        if (_grid.Overlaps(located))
+        var blocked = RejectBlockedSide(tileX, tileY, located);
+        if (blocked is not null)
         {
-            return Reject(RejectionReason.CellOccupied, "That cell is already occupied.");
-        }
-
-        if (!_grid.SharesFullSide(tileX, tileY))
-        {
-            return Reject(
-                RejectionReason.DoesNotShareFullSide,
-                "A tile has to share a full side with a tile already on the board.");
+            return blocked;
         }
 
         return ResolvePlacement(
@@ -108,6 +100,54 @@ public sealed class Game
             quarterTurnsClockwise,
             _grid.Place(tileX, tileY, tile.Id, located),
             located);
+    }
+
+    // Place still passes the turn without turning a tile.
+    // Drawn rotate cells are spent here, after the tile is down and before the claim.
+    public CommandResult PlaceWithRotates(
+        int tileX,
+        int tileY,
+        int quarterTurnsClockwise,
+        IReadOnlyList<RotateUse> rotates)
+    {
+        if (rotates is null)
+        {
+            throw new ArgumentNullException(nameof(rotates));
+        }
+
+        var unplayable = RejectBeforeConsumingMatchTile(quarterTurnsClockwise);
+        if (unplayable is not null)
+        {
+            return unplayable;
+        }
+
+        var tile = _matchDeck[0];
+        var blockedUses = RejectRotateUses(tile, rotates);
+        if (blockedUses is not null)
+        {
+            return blockedUses;
+        }
+
+        var located = tile.CellsAt(tileX, tileY, quarterTurnsClockwise);
+        var blocked = RejectBlockedSide(tileX, tileY, located);
+        if (blocked is not null)
+        {
+            return blocked;
+        }
+
+        var blockedTarget = RejectRotateTargets(tileX, tileY, rotates);
+        if (blockedTarget is not null)
+        {
+            return blockedTarget;
+        }
+
+        var grid = _grid.Place(tileX, tileY, tile.Id, located);
+        foreach (var use in rotates)
+        {
+            grid = grid.TurnClockwise(use.TileX, use.TileY, use.QuarterTurnsClockwise);
+        }
+
+        return ResolvePlacement(tile, tileX, tileY, quarterTurnsClockwise, grid, located);
     }
 
     // One or more stack cells allow this once. Place still refuses the same occupied cell.
@@ -185,7 +225,7 @@ public sealed class Game
         return false;
     }
 
-    // Both placements consume the front match tile. An empty deck is the same open ruling for either.
+    // Place, PlaceWithRotates, and Stack consume the front match tile. An empty deck is the same open ruling for each.
     private CommandResult? RejectBeforeConsumingMatchTile(int quarterTurnsClockwise)
     {
         if (_hasEnded)
@@ -268,20 +308,105 @@ public sealed class Game
         return CommandResult.Accept(next, events);
     }
 
-    private static bool ShowsStack(Tile tile)
+    // Covering a tile is Stack. Overlap stays illegal on a side, even when the drawn tile shows stack.
+    private CommandResult? RejectBlockedSide(
+        int tileX,
+        int tileY,
+        IReadOnlyList<(int X, int Y, Cell Value)> located)
     {
+        if (_grid.Overlaps(located))
+        {
+            return Reject(RejectionReason.CellOccupied, "That cell is already occupied.");
+        }
+
+        if (!_grid.SharesFullSide(tileX, tileY))
+        {
+            return Reject(
+                RejectionReason.DoesNotShareFullSide,
+                "A tile has to share a full side with a tile already on the board.");
+        }
+
+        return null;
+    }
+
+    private CommandResult? RejectRotateUses(Tile tile, IReadOnlyList<RotateUse> rotates)
+    {
+        if (rotates.Count == 0)
+        {
+            return Reject(RejectionReason.NoRotateUse, "Rotate placement needs at least one use.");
+        }
+
+        var charges = CountSymbol(tile, OrdinaryCatalog.Rotate);
+        if (charges == 0)
+        {
+            return Reject(RejectionReason.NoRotateCell, "The drawn tile has no rotate cell.");
+        }
+
+        if (rotates.Count > charges)
+        {
+            return Reject(
+                RejectionReason.TooManyRotateUses,
+                "The drawn tile does not have a rotate cell for every use.");
+        }
+
+        foreach (var use in rotates)
+        {
+            if (use.QuarterTurnsClockwise is < 1 or > 3)
+            {
+                return Reject(
+                    RejectionReason.InvalidRotateQuarterTurns,
+                    "A rotate use is 1, 2, or 3 quarter-turns.");
+            }
+        }
+
+        return null;
+    }
+
+    private CommandResult? RejectRotateTargets(int placedX, int placedY, IReadOnlyList<RotateUse> rotates)
+    {
+        foreach (var use in rotates)
+        {
+            if (!OccupiesAfterPlacement(use.TileX, use.TileY, placedX, placedY))
+            {
+                return Reject(RejectionReason.NoTileToRotate, "There is no tile at that position to rotate.");
+            }
+
+            if (SurroundedAfterPlacement(use.TileX, use.TileY, placedX, placedY))
+            {
+                return Reject(RejectionReason.TileSurrounded, "That tile is completely surrounded.");
+            }
+        }
+
+        return null;
+    }
+
+    // The tile being placed is not on the grid yet. It still counts as a neighbor and as a legal target.
+    private bool OccupiesAfterPlacement(int tileX, int tileY, int placedX, int placedY) =>
+        (tileX == placedX && tileY == placedY) || _grid.HasTile(tileX, tileY);
+
+    private bool SurroundedAfterPlacement(int tileX, int tileY, int placedX, int placedY) =>
+        OccupiesAfterPlacement(tileX + 1, tileY, placedX, placedY)
+        && OccupiesAfterPlacement(tileX - 1, tileY, placedX, placedY)
+        && OccupiesAfterPlacement(tileX, tileY + 1, placedX, placedY)
+        && OccupiesAfterPlacement(tileX, tileY - 1, placedX, placedY);
+
+    private static bool ShowsStack(Tile tile) => CountSymbol(tile, OrdinaryCatalog.Stack) > 0;
+
+    private static int CountSymbol(Tile tile, SymbolId symbol)
+    {
+        var count = 0;
         for (var y = 0; y < 2; y++)
         {
             for (var x = 0; x < 2; x++)
             {
-                if (tile.Local(x, y).TryGetSymbol(out var symbol) && symbol.Equals(OrdinaryCatalog.Stack))
+                if (tile.Local(x, y).TryGetSymbol(out var found) && found.Equals(symbol))
                 {
-                    return true;
+                    count++;
                 }
             }
         }
 
-        return false;
+        return count;
     }
 
     private CommandResult Reject(RejectionReason reason, string message) =>
