@@ -107,9 +107,9 @@ None.
 
 Complete once when the final PR is ready for human merge. Do not use this section for WIP status.
 
-- **Outcome:** {{DELIVERED_RESULT}}
-- **Verification:** {{CONCISE_VERIFICATION_EVIDENCE}}
-- **Deviations:** {{APPROVED_DEVIATIONS_OR_NONE}}
-- **Unresolved gates or risks:** {{ITEMS_OR_NONE}}
-- **Refactor and handoff receipt:** {{ISSUE_COMMENT_OR_PR_LINK}}
-- **Final PR:** {{URL_OR_STACK_PR_LIST}}
+- **Outcome:** The rules library removes one board tile per bounce cell on the tile just drawn, after that placement and before claims. A single-layer target is deleted and its exact `Tile` goes to the bottom of the draw deck, keeping the other deck tiles in order. A stacked target has only its top tile removed to the deck; the layer beneath becomes visible, restored to the cells it had when it was covered. Self-bounce is rejected. The turn claims from the placed tile's written cells, then passes once. `Place`, `Stack`, and `PlaceWithRotates` are unchanged and still decline bounce.
+- **Verification:** On `8e72cf6`, `dotnet test rules/MissionSplat.Rules.sln --configuration Release` passed 131, failed 0, and `dotnet test app/MissionSplat.App.sln --configuration Release` passed 15, failed 0. The implementation lead ran both independently of the execution agent's own receipt. A fresh-context design review (the plugin's `design-reviewer` agent) covered all four changed production files and both changed test files; two of its five suggestions were applied (`Grid.LayerCountAt`, a dead-condition removal in `Grid.Bounce`), three were rejected or deferred with evidence. Evidence is on #17.
+- **Deviations:** Self-bounce is rejected via `CommandResult.Reject` (the `TileSurrounded`/`NoTileToRotate` mechanism), not `UnresolvedRulingException` as the approval-session wording literally said. The substance approved — self-bounce is illegal, game unchanged — is unchanged; only the delivery mechanism differs, because `UnresolvedRulingException` is reserved for a genuinely unresolved rules gap (deck exhaustion) and self-bounce is a resolved illegal move, matching every other move-legality rejection in `Game`. This slice's own scope section and issue #17's checklist already specified the rejection form; only two sentences elsewhere in this plan had the stale wording, corrected on `b5a30b9`. Flagging for the human to confirm on review rather than treating it as silently settled.
+- **Unresolved gates or risks:** A drawn tile with no legal placement, a pattern completed by stack or bounce rather than the placed tile's own cells, mission-deck and match-deck exhaustion, and the uncorrected census rows all stay open, unaffected by this slice. The player still calls only `Place`.
+- **Refactor and handoff receipt:** https://github.com/cblack34/mission-splat/issues/17#issuecomment-6053064259
+- **Final PR:** https://github.com/cblack34/mission-splat/pull/18
