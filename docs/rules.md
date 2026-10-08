@@ -68,8 +68,8 @@ The ordinary win count is 4. Setup can require a different positive count. The f
 A power is printed on the tile that was drawn. Using it is optional unless a later ruling says otherwise. The photographs describe these effects. See [`diagrams/power-ups.svg`](diagrams/power-ups.svg).
 
 - **Rotate.** After the drawn tile is set down, and before claims, each rotate cell on that tile may turn one tile on the board by one, two, or three clockwise quarter-turns if that tile is not completely surrounded. Completely surrounded means all four orthogonal neighbors are occupied. Only the chosen tile's visible cells turn. Claims read the four cells the placed tile wrote, after those turns. Turning a different tile does not award a claim from that tile's cells.
-- **Stack.** Place the drawn tile on top of any tile on the board instead of beside it. The top tile's cells are the cells that match at that position. The covered tiles remain under that position. Uncovering them is still unresolved.
-- **Bounce.** Remove one tile from the board and put it on the bottom of the draw deck. Do not remove the starting tile if it is the only tile, unless the user later rules otherwise. That edge is open.
+- **Stack.** Place the drawn tile on top of any tile on the board instead of beside it. The top tile's cells are the cells that match at that position. The covered tiles remain under that position until a bounce uncovers the top one.
+- **Bounce.** Remove one tile from the board and put it on the bottom of the draw deck. If the named position has a tile buried beneath it, only the top tile is removed; the tile beneath becomes visible again, with the cells it had at the moment it was covered, not the cells its own placement orientation would otherwise show. If the named position has no buried tile, the position is removed from the board entirely. The tile the acting seat just placed this turn can never be a bounce target, so there is always at least one single-layer position left and a bounce can never empty the board.
 - **Blank.** No effect.
 
 A tile may show more than one power cell. Each rotate or bounce cell on the drawn tile may be used once on the turn it is drawn. Stack is not a repeatable action: one or more stack cells on the drawn tile grant the optional stack placement once, and extra stack cells do not grant a second placement. Powers on tiles already on the board are not reused.
@@ -83,8 +83,6 @@ The AI seat has its own two secret missions. It does not observe any other seat'
 These are open. Do not invent a ruling in code without returning to the user.
 
 - The base deck is [`census.md`](census.md): four colors, one line, one L, and one square each, and 30 match tiles. Uncorrected rows in that table still need the maintainer's pass before encoding.
-- Whether a stack buries the covered tile for the rest of the game or only while covered.
-- Bounce of the last remaining tile.
 - A drawn tile that has no legal orthogonal neighbor and no stack power.
 - A pattern completed by stack or bounce rather than by the placed tile's own cells: whether the acting seat may claim it.
 - Mission deck exhausted when a replacement is due, and match-tile deck exhausted on a draw: not printed. Return to the user.

@@ -15,6 +15,11 @@ public enum RejectionReason
     InvalidRotateQuarterTurns,
     NoTileToRotate,
     TileSurrounded,
+    NoBounceUse,
+    NoBounceCell,
+    TooManyBounceUses,
+    NoTileToBounce,
+    CannotBounceJustPlacedTile,
 }
 
 public sealed record Rejection(RejectionReason Reason, string Message);
