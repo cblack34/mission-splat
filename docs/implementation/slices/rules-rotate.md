@@ -114,11 +114,9 @@ None.
 
 ## Delivery record
 
-Complete once when the final PR is ready for human merge. Do not use this section for WIP status.
-
-- **Outcome:**
-- **Verification:**
-- **Deviations:**
-- **Unresolved gates or risks:**
-- **Final PR:**
+- **Outcome:** The rules library turns a tile that is not completely surrounded, once for each rotate cell on the tile just drawn. The turn claims from the placed tile's four cells after those turns, then passes once. The three-argument `Place` and `Stack` still do not rotate.
+- **Verification:** On `fad0871`, `dotnet test rules/MissionSplat.Rules.sln --configuration Release` passed 121, failed 0, and `dotnet test app/MissionSplat.App.sln --configuration Release` passed 15, failed 0. The implementation lead ran both. A read-only design review on `grok-4.7` found no structural change. Evidence is on #15 and #16. This delivery-record commit does not change code.
+- **Deviations:** None. A tile with both stack and rotate can stack without rotating, or take a side and rotate. It cannot do both in one command. `ISession` and the Unity table are unchanged.
+- **Unresolved gates or risks:** Bounce, uncover, a tile with nowhere legal, deck exhaustion, and the uncorrected census rows. The player still declines rotate.
+- **Final PR:** https://github.com/cblack34/mission-splat/pull/16
 - **Merge state:** Ready for the human to merge; agents do not merge to `main`.
