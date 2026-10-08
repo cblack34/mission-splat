@@ -488,9 +488,7 @@ public sealed class Game
             var coord = new TileCoord(use.TileX, use.TileY);
             if (!remainingLayers.TryGetValue(coord, out var layers))
             {
-                layers = _grid.HasTile(use.TileX, use.TileY)
-                    ? 1 + _grid.CoveredTileIds(use.TileX, use.TileY).Count
-                    : 0;
+                layers = _grid.LayerCountAt(use.TileX, use.TileY);
             }
 
             if (layers == 0)

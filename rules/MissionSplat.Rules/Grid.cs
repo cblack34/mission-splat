@@ -30,6 +30,18 @@ internal sealed class Grid
 
     public bool HasTile(int tileX, int tileY) => _tiles.ContainsKey(new TileCoord(tileX, tileY));
 
+    // The visible tile plus whatever is buried beneath it, without allocating the id array CoveredTileIds returns.
+    public int LayerCountAt(int tileX, int tileY)
+    {
+        var coord = new TileCoord(tileX, tileY);
+        if (!_tiles.ContainsKey(coord))
+        {
+            return 0;
+        }
+
+        return 1 + (_covered.TryGetValue(coord, out var layers) ? layers.Length : 0);
+    }
+
     public IReadOnlyList<TileId> CoveredTileIds(int tileX, int tileY)
     {
         if (!_covered.TryGetValue(new TileCoord(tileX, tileY), out var layers))
@@ -164,7 +176,7 @@ internal sealed class Grid
         var covered = new Dictionary<TileCoord, BuriedLayer[]>(_covered);
         var cells = new Dictionary<CellCoord, Cell>(_cells);
 
-        if (!covered.TryGetValue(coord, out var layers) || layers.Length == 0)
+        if (!covered.TryGetValue(coord, out var layers))
         {
             tiles.Remove(coord);
             for (var y = 0; y < 2; y++)
