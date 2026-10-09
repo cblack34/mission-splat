@@ -13,37 +13,34 @@ public class BounceTests
     private static readonly Cell Purple = Cell.Color(OrdinaryCatalog.Purple);
 
     [Test]
-    public void SingleLayerBounce_RemovesThePosition_AndSendsTheExactTileToTheBottomOfTheDeck()
+    public void BounceBeforeThePlacement_RemovesThePosition_SendsTheTileToTheBottomOfTheDeck_AndLeavesTheDrawnTilePending()
     {
         var side = Cards.BlankTile("side");
         var next1 = Cards.BlankTile("next1");
         var next2 = Cards.BlankTile("next2");
         var game = TwoSeatGame(Cards.BlankTile("start"), side, OneBounce("drawn"), next1, next2);
-
         var afterSide = See.Game(RepresentativeDeck.Play(game, 1, 0));
         Assert.That(afterSide.MatchDeckRemaining, Is.EqualTo(3));
 
-        var result = RepresentativeDeck.Bounce(afterSide, 2, 0, [new BounceUse(1, 0)]);
-        var next = See.Game(result);
+        var result = RepresentativeDeck.Bounce(afterSide, 1, 0);
+        var bounced = See.Game(result);
 
-        Assert.That(result.Events, Has.Count.EqualTo(1));
-        Assert.That(result.Events[0], Is.TypeOf<TilePlaced>());
-        Assert.That(next.HasTileAt(1, 0), Is.False, "the bounced position disappears entirely");
-        Assert.That(next.HasTileAt(0, 0), Is.True);
-        Assert.That(next.HasTileAt(2, 0), Is.True);
-        Assert.That(next.TileCount, Is.EqualTo(2));
-        Assert.That(next.MatchDeckRemaining, Is.EqualTo(3));
-        Assert.That(next.PendingMatchTile!.Id, Is.EqualTo(next1.Id));
-        Assert.That(next.CurrentSeat, Is.EqualTo(Cards.Seat("a")));
+        Assert.That(result.Events, Is.EqualTo(new[] { new TileBounced(Cards.Seat("b"), 1, 0, new TileId("side"), null) }));
+        Assert.That(bounced.HasTileAt(1, 0), Is.False, "the bounced position disappears entirely");
+        Assert.That(bounced.CellAt(2, 0), Is.Null);
+        Assert.That(bounced.HasTileAt(0, 0), Is.True);
+        Assert.That(bounced.TileCount, Is.EqualTo(1));
+        Assert.That(bounced.MatchDeckRemaining, Is.EqualTo(4));
+        Assert.That(bounced.PendingMatchTile!.Id.Value, Is.EqualTo("drawn"));
+        Assert.That(bounced.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
 
-        var afterNext1 = See.Game(RepresentativeDeck.Play(next, 0, 1));
-        Assert.That(afterNext1.PendingMatchTile!.Id, Is.EqualTo(next2.Id));
-        Assert.That(afterNext1.MatchDeckRemaining, Is.EqualTo(2));
-
-        var afterNext2 = See.Game(RepresentativeDeck.Play(afterNext1, 0, 2));
-        Assert.That(afterNext2.MatchDeckRemaining, Is.EqualTo(1));
-        Assert.That(afterNext2.PendingMatchTile, Is.SameAs(side), "the bounced tile is the exact object, last in the deck");
-        Assert.That(afterSide.HasTileAt(1, 0), Is.True, "the command before the bounce is unaffected");
+        var afterDrawn = See.Game(RepresentativeDeck.Play(bounced, 1, 0));
+        Assert.That(afterDrawn.PendingMatchTile, Is.SameAs(next1));
+        var afterNext1 = See.Game(RepresentativeDeck.Play(afterDrawn, 0, 1));
+        Assert.That(afterNext1.PendingMatchTile, Is.SameAs(next2));
+        var afterNext2 = See.Game(RepresentativeDeck.Play(afterNext1, 0, -1));
+        Assert.That(afterNext2.PendingMatchTile, Is.SameAs(side), "the bounced tile is last in the deck");
+        Assert.That(afterSide.HasTileAt(1, 0), Is.True, "the match before the bounce is unaffected");
     }
 
     [Test]
@@ -56,76 +53,70 @@ public class BounceTests
         var afterT1 = See.Game(RepresentativeDeck.Play(game, 1, 0));
         var afterT2 = See.Game(RepresentativeDeck.Play(afterT1, -1, 0));
 
-        var third = afterT2.PlaceWithBounces(
-            2,
-            0,
-            0,
-            [new BounceUse(1, 0), new BounceUse(-1, 0), new BounceUse(1, 0)]);
-        AssertRejected(afterT2, third, RejectionReason.TooManyBounceUses);
-        Assert.That(afterT2.TileCount, Is.EqualTo(3));
-        Assert.That(afterT2.MatchDeckRemaining, Is.EqualTo(1));
+        var afterFirst = See.Game(RepresentativeDeck.Bounce(afterT2, 1, 0));
+        var afterSecond = See.Game(RepresentativeDeck.Bounce(afterFirst, -1, 0));
+        var third = RepresentativeDeck.Try(afterSecond, new UseBounce(0, 0));
 
-        var both = See.Game(RepresentativeDeck.Bounce(
-            afterT2,
-            2,
-            0,
-            [new BounceUse(1, 0), new BounceUse(-1, 0)]));
-        Assert.That(both.HasTileAt(1, 0), Is.False);
-        Assert.That(both.HasTileAt(-1, 0), Is.False);
-        Assert.That(both.HasTileAt(2, 0), Is.True);
-        Assert.That(both.HasTileAt(0, 0), Is.True);
-        Assert.That(both.TileCount, Is.EqualTo(2));
-        Assert.That(both.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
-        Assert.That(both.MatchDeckRemaining, Is.EqualTo(2));
-        Assert.That(both.PendingMatchTile, Is.SameAs(t1), "the use order lists t1 before t2, so t1 lands first");
+        AssertRejected(afterSecond, third, RejectionReason.NoUseRemaining);
+        Assert.That(afterSecond.HasTileAt(1, 0), Is.False);
+        Assert.That(afterSecond.HasTileAt(-1, 0), Is.False);
+        Assert.That(afterSecond.HasTileAt(0, 0), Is.True);
+        Assert.That(afterSecond.TileCount, Is.EqualTo(1));
+        Assert.That(afterSecond.CurrentSeat, Is.EqualTo(Cards.Seat("a")));
+        Assert.That(afterSecond.PendingMatchTile!.Id.Value, Is.EqualTo("drawn"));
+        Assert.That(afterSecond.MatchDeckRemaining, Is.EqualTo(3));
 
-        var afterT1Redrawn = See.Game(RepresentativeDeck.Play(both, 3, 0));
+        var afterDrawn = See.Game(RepresentativeDeck.Play(afterSecond, 1, 0));
+        Assert.That(afterDrawn.PendingMatchTile, Is.SameAs(t1), "the use order lists t1 before t2, so t1 lands first");
+        var afterT1Redrawn = See.Game(RepresentativeDeck.Play(afterDrawn, 2, 0));
         Assert.That(afterT1Redrawn.PendingMatchTile, Is.SameAs(t2), "t2 trails t1 in the deck, not swapped ahead of it");
     }
 
     [Test]
-    public void BounceSymbolAlreadyOnTheBoard_AddsNoCharge()
+    public void BounceSymbolAlreadyOnTheBoard_GrantsNothing()
     {
         var plain = TwoSeatGame(
             Cards.Tile("start", Bounce, Cards.Red, Cards.Blue, Cards.Blank),
             Cards.BlankTile("drawn"));
 
-        var blocked = plain.PlaceWithBounces(1, 0, 0, [new BounceUse(0, 0)]);
+        var blocked = RepresentativeDeck.Try(plain, new UseBounce(0, 0));
 
-        AssertRejected(plain, blocked, RejectionReason.NoBounceCell);
+        AssertRejected(plain, blocked, RejectionReason.NoUseRemaining);
         Assert.That(plain.CellAt(0, 0), Is.EqualTo(Bounce));
         Assert.That(plain.TileCount, Is.EqualTo(1));
         Assert.That(plain.MatchDeckRemaining, Is.EqualTo(1));
     }
 
     [Test]
-    public void EmptyTarget_IsRejected()
+    public void EmptyTarget_IsRejected_AndTheDrawnTileIsNeverATarget()
     {
         var game = TwoSeatGame(Cross("start"), OneBounce("drawn"));
 
-        var rejected = game.PlaceWithBounces(1, 0, 0, [new BounceUse(3, 3)]);
+        foreach (var (x, y) in new[] { (3, 3), (1, 0) })
+        {
+            var rejected = RepresentativeDeck.Try(game, new UseBounce(x, y));
 
-        AssertRejected(game, rejected, RejectionReason.NoTileToBounce);
-        Assert.That(game.HasTileAt(1, 0), Is.False);
+            AssertRejected(game, rejected, RejectionReason.NoTileToBounce);
+        }
+
         Assert.That(game.TileCount, Is.EqualTo(1));
+        Assert.That(game.PendingMatchTile!.Id.Value, Is.EqualTo("drawn"));
     }
 
     [Test]
-    public void RepeatedTargetBeyondItsLayers_IsRejected_RatherThanThrowing()
+    public void ASecondBounceOfAnAlreadyEmptiedPosition_IsRejected_AndTheFirstStaysApplied()
     {
         var drawn = Cards.Tile("drawn", Bounce, Bounce, Cards.Red, Cards.Blue);
         var game = TwoSeatGame(Cross("start"), Cards.BlankTile("target"), drawn);
         var afterTarget = See.Game(RepresentativeDeck.Play(game, 1, 0));
+        var afterFirst = See.Game(RepresentativeDeck.Bounce(afterTarget, 1, 0));
 
-        var rejected = afterTarget.PlaceWithBounces(
-            2,
-            0,
-            0,
-            [new BounceUse(1, 0), new BounceUse(1, 0)]);
+        var rejected = RepresentativeDeck.Try(afterFirst, new UseBounce(1, 0));
 
-        AssertRejected(afterTarget, rejected, RejectionReason.NoTileToBounce);
-        Assert.That(afterTarget.HasTileAt(1, 0), Is.True);
-        Assert.That(afterTarget.TileCount, Is.EqualTo(2));
+        AssertRejected(afterFirst, rejected, RejectionReason.NoTileToBounce);
+        Assert.That(afterFirst.HasTileAt(1, 0), Is.False);
+        Assert.That(afterFirst.TileCount, Is.EqualTo(1));
+        Assert.That(RepresentativeDeck.Bounce(afterFirst, 0, 0).Events, Has.Count.EqualTo(1), "the second cell is still unspent");
     }
 
     [Test]
@@ -133,6 +124,7 @@ public class BounceTests
     {
         var mid = Cross("mid");
         var lid = OneStack("lid");
+        var bounce2 = OneBounce("bounce2");
         var game = RepresentativeDeck.Start(
             ["a", "b"],
             "a",
@@ -143,134 +135,129 @@ public class BounceTests
                 OneRotate("turner"),
                 lid,
                 Cards.Tile("bounce1", Bounce, Bounce, Cards.Blank, Cards.Blank),
-                OneBounce("bounce2"),
+                bounce2,
             ]);
 
         var afterMid = See.Game(RepresentativeDeck.Play(game, 1, 0));
         AssertTile(afterMid, 1, 0, ExpectedClockwise(0));
 
-        var afterTurn = See.Game(RepresentativeDeck.Rotate(afterMid, 2, 0, [new RotateUse(1, 0, 1)]));
+        var afterTurn = See.Game(RepresentativeDeck.Rotate(afterMid, 1, 0));
         AssertTile(afterTurn, 1, 0, ExpectedClockwise(1));
+        var afterTurner = See.Game(RepresentativeDeck.Play(afterTurn, 2, 0));
 
-        var afterLid = See.Game(RepresentativeDeck.Stack(afterTurn, 1, 0));
+        var stackResult = RepresentativeDeck.Play(afterTurner, 1, 0);
+        var afterLid = See.Game(stackResult);
+        Assert.That(((TilePlaced)stackResult.Events[0]).Covered, Is.EqualTo(new TileId("mid")));
         Assert.That(Ids(afterLid.CoveredTileIds(1, 0)), Is.EqualTo(new[] { "mid" }));
         Assert.That(afterLid.TileCount, Is.EqualTo(3));
 
-        // Peel the stack's top: reveals "mid" with the cells it had when covered (rotated), not its
-        // original unrotated placement cells.
-        var afterFirstBounce = See.Game(RepresentativeDeck.Bounce(afterLid, 3, 0, [new BounceUse(1, 0)]));
+        // The first bounce peels the stack's top and reveals "mid" with the cells it had when covered (already
+        // turned), not the cells its own placement orientation would show.
+        var firstBounce = RepresentativeDeck.Bounce(afterLid, 1, 0);
+        var afterFirstBounce = See.Game(firstBounce);
+        Assert.That(
+            firstBounce.Events,
+            Is.EqualTo(new[] { new TileBounced(Cards.Seat("b"), 1, 0, new TileId("lid"), new TileId("mid")) }));
         AssertTile(afterFirstBounce, 1, 0, ExpectedClockwise(1));
-        Assert.That(afterFirstBounce.HasTileAt(1, 0), Is.True);
         Assert.That(afterFirstBounce.CoveredTileIds(1, 0), Is.Empty);
-        Assert.That(afterFirstBounce.TileCount, Is.EqualTo(4), "a stacked bounce does not change the tile count");
+        Assert.That(afterFirstBounce.TileCount, Is.EqualTo(3), "a stacked bounce does not change the tile count");
 
-        // A second bounce on the now single-layer position removes it entirely.
-        var afterSecondBounce = See.Game(RepresentativeDeck.Bounce(afterFirstBounce, 4, 0, [new BounceUse(1, 0)]));
+        // The second bounce, in the same turn, removes the now single-layer position entirely.
+        var secondBounce = RepresentativeDeck.Bounce(afterFirstBounce, 1, 0);
+        var afterSecondBounce = See.Game(secondBounce);
+        Assert.That(
+            secondBounce.Events,
+            Is.EqualTo(new[] { new TileBounced(Cards.Seat("b"), 1, 0, new TileId("mid"), null) }));
         Assert.That(afterSecondBounce.HasTileAt(1, 0), Is.False);
-        Assert.That(afterSecondBounce.TileCount, Is.EqualTo(4));
-        Assert.That(afterSecondBounce.MatchDeckRemaining, Is.EqualTo(2));
-        Assert.That(afterSecondBounce.PendingMatchTile, Is.SameAs(lid), "lid was bounced first");
+        Assert.That(afterSecondBounce.TileCount, Is.EqualTo(2));
+        Assert.That(afterSecondBounce.MatchDeckRemaining, Is.EqualTo(4));
 
-        // The same two-layer peel, but as both uses of one command on the same target: "bounce1" has two
-        // bounce cells, so one PlaceWithBounces call reveals "mid" and then removes it in the same turn.
-        var bothInOneCommand = See.Game(RepresentativeDeck.Bounce(
-            afterLid,
-            3,
-            0,
-            [new BounceUse(1, 0), new BounceUse(1, 0)]));
-        Assert.That(bothInOneCommand.HasTileAt(1, 0), Is.False);
-        Assert.That(bothInOneCommand.TileCount, Is.EqualTo(3), "start, turner, and bounce1 remain");
-        Assert.That(bothInOneCommand.MatchDeckRemaining, Is.EqualTo(3));
-        Assert.That(bothInOneCommand.PendingMatchTile!.Id.Value, Is.EqualTo("bounce2"), "lid and mid trail it");
-
-        var afterBounce2 = See.Game(RepresentativeDeck.Play(bothInOneCommand, 4, 0));
-        Assert.That(afterBounce2.PendingMatchTile, Is.SameAs(lid), "lid was bounced before mid in this one command");
-
-        var afterLidRedrawn = See.Game(RepresentativeDeck.Play(afterBounce2, 5, 0));
+        var afterBounce1 = See.Game(RepresentativeDeck.Play(afterSecondBounce, 1, 0));
+        Assert.That(afterBounce1.PendingMatchTile, Is.SameAs(bounce2));
+        var afterBounce2 = See.Game(RepresentativeDeck.Play(afterBounce1, 0, 1));
+        Assert.That(afterBounce2.PendingMatchTile, Is.SameAs(lid), "lid was bounced before mid");
+        var afterLidRedrawn = See.Game(RepresentativeDeck.Play(afterBounce2, 1, 1));
         Assert.That(afterLidRedrawn.PendingMatchTile, Is.SameAs(mid), "mid trails lid, not swapped ahead of it");
     }
 
     [Test]
-    public void SelfBounce_IsRejected_AndLeavesTheGameUnchanged()
+    public void ABounceOnALaterTurn_RemovesTheRevealedTile_AfterTheStackWasPeeled()
     {
-        var game = TwoSeatGame(Cross("start"), OneBounce("drawn"));
+        var game = RepresentativeDeck.Start(
+            ["a", "b"],
+            "a",
+            [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2"), Cards.Purple("spare")],
+            [
+                Cross("start"),
+                Cards.BlankTile("mid"),
+                OneStack("lid"),
+                OneBounce("bounce1"),
+                OneBounce("bounce2"),
+            ]);
+        var afterMid = See.Game(RepresentativeDeck.Play(game, 1, 0));
+        var afterLid = See.Game(RepresentativeDeck.Play(afterMid, 1, 0));
 
-        var rejected = game.PlaceWithBounces(1, 0, 0, [new BounceUse(1, 0)]);
+        var afterFirstBounce = See.Game(RepresentativeDeck.Bounce(afterLid, 1, 0));
+        var afterBounce1 = See.Game(RepresentativeDeck.Play(afterFirstBounce, 2, 0));
+        var secondBounce = RepresentativeDeck.Bounce(afterBounce1, 1, 0);
 
-        AssertRejected(game, rejected, RejectionReason.CannotBounceJustPlacedTile);
-        Assert.That(game.TileCount, Is.EqualTo(1));
-        Assert.That(game.HasTileAt(1, 0), Is.False);
-        Assert.That(game.MatchDeckRemaining, Is.EqualTo(1));
+        Assert.That(
+            secondBounce.Events,
+            Is.EqualTo(new[] { new TileBounced(Cards.Seat("b"), 1, 0, new TileId("mid"), null) }));
+        Assert.That(See.Game(secondBounce).HasTileAt(1, 0), Is.False);
+        Assert.That(afterFirstBounce.HasTileAt(1, 0), Is.True);
     }
 
     [Test]
-    public void Place_Stack_AndPlaceWithRotates_DeclineBounce()
+    public void ABouncedPosition_IsEmpty_SoThePlacementMayTakeIt()
     {
-        var placeGame = TwoSeatGame(Cross("start"), OneBounce("drawn"));
-        var placed = See.Game(RepresentativeDeck.Play(placeGame, 1, 0));
-        Assert.That(placed.HasTileAt(0, 0), Is.True);
-        Assert.That(placed.TileCount, Is.EqualTo(2));
-        Assert.That(placed.CellAt(2, 0), Is.EqualTo(Bounce));
+        var game = TwoSeatGame(Cards.BlankTile("start"), Cards.BlankTile("side"), OneBounce("drawn"));
+        var afterSide = See.Game(RepresentativeDeck.Play(game, 1, 0));
 
-        var stackGame = TwoSeatGame(
-            Cards.BlankTile("start"),
-            Cards.BlankTile("aside"),
-            Cards.Tile("drawn", Bounce, Stack, Cards.Blank, Cards.Blank));
-        var afterAside = See.Game(RepresentativeDeck.Play(stackGame, 1, 0));
-        var stacked = See.Game(RepresentativeDeck.Stack(afterAside, 0, 0));
-        Assert.That(stacked.HasTileAt(1, 0), Is.True, "stack does not bounce the aside tile");
-        Assert.That(stacked.TileCount, Is.EqualTo(2));
+        var afterBounce = See.Game(RepresentativeDeck.Bounce(afterSide, 1, 0));
+        var placed = RepresentativeDeck.Play(afterBounce, 1, 0);
 
-        var rotateGame = TwoSeatGame(Cross("start"), Cards.Tile("drawn", Bounce, Rotate, Cards.Blank, Cards.Blank));
-        var rotated = See.Game(RepresentativeDeck.Rotate(rotateGame, 1, 0, [new RotateUse(0, 0, 1)]));
-        AssertTile(rotated, 0, 0, ExpectedClockwise(1));
-        Assert.That(rotated.TileCount, Is.EqualTo(2), "rotate does not also bounce");
-        Assert.That(rotated.CellAt(2, 0), Is.EqualTo(Bounce));
+        Assert.That(((TilePlaced)placed.Events.Single()).Covered, Is.Null);
+        Assert.That(See.Game(placed).TileCount, Is.EqualTo(2));
+        Assert.That(See.Game(placed).CellAt(2, 0), Is.EqualTo(Bounce));
     }
 
     [Test]
-    public void NoUse_IsRejected_EvenWhenTheDrawnTileHasABounceCell()
+    public void BounceTheOnlyTile_EmptiesTheBoard_AndThePlacementIsLegalOnlyAtTheOrigin()
     {
-        var game = TwoSeatGame(Cross("start"), OneBounce("drawn"));
+        var start = Cross("start");
+        var game = TwoSeatGame(
+            start,
+            Cards.Tile("drawn", Bounce, Bounce, Cards.Blank, Cards.Blank),
+            Cards.BlankTile("next"));
 
-        var rejected = game.PlaceWithBounces(1, 0, 0, []);
+        var bounced = RepresentativeDeck.Bounce(game, 0, 0);
+        var empty = See.Game(bounced);
 
-        AssertRejected(game, rejected, RejectionReason.NoBounceUse);
-        Assert.That(game.TileCount, Is.EqualTo(1));
-        Assert.That(game.MatchDeckRemaining, Is.EqualTo(1));
+        Assert.That(bounced.Events, Is.EqualTo(new[] { new TileBounced(Cards.Seat("a"), 0, 0, new TileId("start"), null) }));
+        Assert.That(empty.TileCount, Is.EqualTo(0));
+        Assert.That(empty.HasTileAt(0, 0), Is.False);
+        Assert.That(empty.CellAt(0, 0), Is.Null);
+        Assert.That(empty.PendingMatchTile!.Id.Value, Is.EqualTo("drawn"));
+        Assert.That(empty.CurrentSeat, Is.EqualTo(Cards.Seat("a")));
+        AssertRejected(empty, RepresentativeDeck.Try(empty, new UseBounce(0, 0)), RejectionReason.NoTileToBounce);
+        AssertRejected(empty, RepresentativeDeck.Try(empty, new UseRotate(0, 0, 1)), RejectionReason.NoUseRemaining);
+
+        foreach (var (x, y) in new[] { (1, 0), (0, 1), (-1, 0), (1, 1) })
+        {
+            AssertRejected(empty, RepresentativeDeck.Try(empty, new Place(x, y, 0)), RejectionReason.NotAtOrigin);
+        }
+
+        var placed = RepresentativeDeck.Play(empty, 0, 0, 2);
+        var next = See.Game(placed);
+
+        Assert.That(next.TileCount, Is.EqualTo(1));
+        Assert.That(next.HasTileAt(0, 0), Is.True);
+        Assert.That(((TilePlaced)placed.Events.Single()).Covered, Is.Null);
+        Assert.That(next.PendingMatchTile!.Id.Value, Is.EqualTo("next"));
+        Assert.That(next.MatchDeckRemaining, Is.EqualTo(2));
     }
 
-    [Test]
-    public void NullUses_Throw_AndLeaveTheGame()
-    {
-        var game = TwoSeatGame(Cross("start"), OneBounce("drawn"));
-
-        Assert.That(() => game.PlaceWithBounces(1, 0, 0, null!), Throws.ArgumentNullException);
-        Assert.That(game.TileCount, Is.EqualTo(1));
-        Assert.That(game.CurrentSeat, Is.EqualTo(Cards.Seat("a")));
-    }
-
-    // Mirrors RotateTests.OccupiedCell_AndCornerOnly_AreRejected: RejectBlockedSide is shared logic, but this
-    // pins it specifically through the PlaceWithBounces call site. The single bounce use is never reached:
-    // RejectBounceUses (and then RejectBlockedSide) both run before RejectBounceTargets is consulted.
-    [Test]
-    public void OccupiedCell_AndCornerOnly_AreRejected()
-    {
-        var game = TwoSeatGame(Cards.BlankTile("start"), OneBounce("drawn"));
-
-        var occupied = game.PlaceWithBounces(0, 0, 0, [new BounceUse(0, 0)]);
-        AssertRejected(game, occupied, RejectionReason.CellOccupied);
-
-        var corner = game.PlaceWithBounces(1, 1, 0, [new BounceUse(0, 0)]);
-        AssertRejected(game, corner, RejectionReason.DoesNotShareFullSide);
-        Assert.That(game.TileCount, Is.EqualTo(1));
-        Assert.That(game.MatchDeckRemaining, Is.EqualTo(1));
-        Assert.That(game.CellAt(0, 0), Is.EqualTo(Cards.Blank));
-    }
-
-    // Mirrors RotateTests.EmptyMatchDeck_ThrowsUnresolvedRuling_AndLeavesTheGame. RejectBeforeConsumingMatchTile
-    // is shared, unchanged logic that runs before any bounce-specific code, reached the same way through
-    // PlaceWithBounces as through Place, PlaceWithRotates, and Stack.
     [Test]
     public void EmptyMatchDeck_ThrowsUnresolvedRuling_AndLeavesTheGame()
     {
@@ -280,7 +267,7 @@ public class BounceTests
 
         Assert.That(game.MatchDeckRemaining, Is.EqualTo(0));
         Assert.That(
-            () => { game.PlaceWithBounces(1, 0, 0, [new BounceUse(0, 0)]); },
+            () => { RepresentativeDeck.Try(game, new UseBounce(0, 0)); },
             Throws.TypeOf<UnresolvedRulingException>().With.Message.EqualTo(
                 "The match deck has no tile to place. Exhausting the match deck is an open ruling, so this command was not applied."));
 
@@ -292,11 +279,9 @@ public class BounceTests
     }
 
     // The square's four corners are (1,1), (2,1), (1,2), and (2,2), one cell from each of four tiles (see
-    // SquareClaimTests). Bouncing "start" away in the same command that would otherwise complete the square
-    // denies the claim: ResolvePlacement reads the post-bounce board, and "start" no longer holds corner (1,1).
-    // This is the "bounce that removes a would-be pattern" gap flagged against claim coverage for this command.
+    // SquareClaimTests). Bouncing "start" away before the finish is placed leaves the placement one corner short.
     [Test]
-    public void BounceRemovesAWouldBePattern_IsNotClaimed()
+    public void ABounceThatRemovesAPatternCorner_BeforeThePlacement_PreventsTheClaim()
     {
         var game = RepresentativeDeck.Start(
             ["a", "b"],
@@ -314,30 +299,27 @@ public class BounceTests
                 Cards.Tile("b-side", Cards.Blank, Cards.Red, Cards.Blank, Cards.Blank),
                 Cards.Tile("finish", Cards.Red, Bounce, Cards.Blank, Cards.Blank),
             ]);
-
         var afterA = See.Game(RepresentativeDeck.Play(game, 1, 0));
         var afterB = See.Game(RepresentativeDeck.Play(afterA, 0, 1));
 
-        var result = RepresentativeDeck.Bounce(afterB, 1, 1, [new BounceUse(0, 0)]);
-        var next = See.Game(result);
+        var bounced = See.Game(RepresentativeDeck.Bounce(afterB, 0, 0));
+        var placed = RepresentativeDeck.Play(bounced, 1, 1);
+        var next = See.Game(placed);
 
         Assert.That(next.HasTileAt(0, 0), Is.False, "the removed corner leaves the board");
         Assert.That(next.CellAt(2, 2), Is.EqualTo(Cards.Red), "the placed tile still wrote its own corner");
         Assert.That(next.Claims(Cards.Seat("a")), Is.Empty, "the square never completed: bounce removed a corner");
-        Assert.That(result.Events, Has.Count.EqualTo(1));
-        Assert.That(result.Events[0], Is.TypeOf<TilePlaced>());
+        Assert.That(placed.Events, Has.Count.EqualTo(1));
+        Assert.That(placed.Events[0], Is.TypeOf<TilePlaced>());
         Assert.That(next.TileCount, Is.EqualTo(3));
         Assert.That(next.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
     }
 
-    // "start" is a solid green square: once dealt, all four of its cells already match the square pattern, but
-    // Start never evaluates claims. Covering it with a stack hides the match; bouncing that stack away in a
-    // later, unrelated command (one that never writes any of the square's own four cells) still does not
-    // claim it, because WasCompletedBy requires the acting command's written cells to touch the pattern. This
-    // is the "remote bounce/reveal that forms a pattern missing the written cells" gap flagged against claim
-    // coverage for this command.
+    // "start" is a solid green square: dealt, all four of its cells already match the square pattern, but Start
+    // never evaluates claims. Covering it hides the match; bouncing the cover away on a later turn exposes it,
+    // yet the placement that follows writes none of the square's own four cells, so nothing is claimed.
     [Test]
-    public void RemoteBounceReveal_FormsAPatternMissingTheWrittenCells_IsNotClaimed()
+    public void ABounceThatExposesAPattern_ThePlacedCellsDoNotComplete_DoesNotClaim()
     {
         var game = RepresentativeDeck.Start(
             ["a", "b"],
@@ -355,23 +337,26 @@ public class BounceTests
                 Cards.Tile("cover", Stack, Cards.Blank, Cards.Blank, Cards.Blank),
                 Cards.Tile("elsewhere", Bounce, Cards.Blank, Cards.Blank, Cards.Blank),
             ]);
-
         var afterPad = See.Game(RepresentativeDeck.Play(game, 1, 0));
-        var stacked = See.Game(RepresentativeDeck.Stack(afterPad, 0, 0));
+        var stacked = See.Game(RepresentativeDeck.Play(afterPad, 0, 0));
         Assert.That(stacked.CellAt(0, 0), Is.EqualTo(Stack));
         Assert.That(stacked.Claims(Cards.Seat("a")), Is.Empty);
 
-        var result = RepresentativeDeck.Bounce(stacked, 2, 0, [new BounceUse(0, 0)]);
-        var next = See.Game(result);
+        var bounce = RepresentativeDeck.Bounce(stacked, 0, 0);
+        var exposed = See.Game(bounce);
+        var placed = RepresentativeDeck.Play(exposed, 2, 0);
+        var next = See.Game(placed);
 
+        Assert.That(
+            bounce.Events,
+            Is.EqualTo(new[] { new TileBounced(Cards.Seat("a"), 0, 0, new TileId("cover"), new TileId("start")) }));
         Assert.That(next.CellAt(0, 0), Is.EqualTo(Green));
         Assert.That(next.CellAt(1, 0), Is.EqualTo(Green));
         Assert.That(next.CellAt(0, 1), Is.EqualTo(Green));
         Assert.That(next.CellAt(1, 1), Is.EqualTo(Green));
         Assert.That(next.CoveredTileIds(0, 0), Is.Empty);
-        Assert.That(next.Claims(Cards.Seat("a")), Is.Empty, "the reveal writes none of the square's own cells");
-        Assert.That(result.Events, Has.Count.EqualTo(1));
-        Assert.That(result.Events[0], Is.TypeOf<TilePlaced>());
+        Assert.That(next.Claims(Cards.Seat("a")), Is.Empty, "the placement writes none of the square's own cells");
+        Assert.That(placed.Events, Has.Count.EqualTo(1));
         Assert.That(next.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
     }
 

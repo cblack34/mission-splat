@@ -206,7 +206,7 @@ public class ResolutionTests
         var claimsB = See.Ids(game.Claims(Cards.Seat("b")));
 
         Assert.That(
-            () => { game.Place(1, 0, 0); },
+            () => { RepresentativeDeck.Try(game, new Place(1, 0, 0)); },
             Throws.TypeOf<UnresolvedRulingException>().With.Message.EqualTo(
                 "The mission deck cannot replace every mission this placement completed. Exhausting the mission deck is an open ruling, so this command was not applied."));
 
@@ -221,7 +221,7 @@ public class ResolutionTests
 
     private static void AssertCornerStillRejected(Game game)
     {
-        var corner = game.Place(1, 1, 0);
+        var corner = RepresentativeDeck.Try(game, new Place(1, 1, 0));
 
         Assert.That(corner.IsAccepted, Is.False);
         Assert.That(corner.Rejection?.Reason, Is.EqualTo(RejectionReason.DoesNotShareFullSide));

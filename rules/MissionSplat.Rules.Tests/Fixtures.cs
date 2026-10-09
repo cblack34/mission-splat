@@ -48,40 +48,20 @@ internal static class RepresentativeDeck
         return See.Game(result);
     }
 
-    public static CommandResult Play(Game game, int tileX, int tileY, int quarterTurns = 0)
-    {
-        var result = game.Place(tileX, tileY, quarterTurns);
-        Assert.That(result.IsAccepted, Is.True, result.Rejection?.Message);
-        return result;
-    }
+    // The acting seat is whoever is current, so a fixture names only the action.
+    public static CommandResult Try(Game game, GameAction action) => game.Apply(game.CurrentSeat, action);
 
-    public static CommandResult Stack(Game game, int tileX, int tileY, int quarterTurns = 0)
-    {
-        var result = game.Stack(tileX, tileY, quarterTurns);
-        Assert.That(result.IsAccepted, Is.True, result.Rejection?.Message);
-        return result;
-    }
+    public static CommandResult Play(Game game, int tileX, int tileY, int quarterTurns = 0) =>
+        Accepted(Try(game, new Place(tileX, tileY, quarterTurns)));
 
-    public static CommandResult Rotate(
-        Game game,
-        int tileX,
-        int tileY,
-        IReadOnlyList<RotateUse> rotates,
-        int quarterTurns = 0)
-    {
-        var result = game.PlaceWithRotates(tileX, tileY, quarterTurns, rotates);
-        Assert.That(result.IsAccepted, Is.True, result.Rejection?.Message);
-        return result;
-    }
+    public static CommandResult Rotate(Game game, int tileX, int tileY, int quarterTurns = 1) =>
+        Accepted(Try(game, new UseRotate(tileX, tileY, quarterTurns)));
 
-    public static CommandResult Bounce(
-        Game game,
-        int tileX,
-        int tileY,
-        IReadOnlyList<BounceUse> bounces,
-        int quarterTurns = 0)
+    public static CommandResult Bounce(Game game, int tileX, int tileY) =>
+        Accepted(Try(game, new UseBounce(tileX, tileY)));
+
+    private static CommandResult Accepted(CommandResult result)
     {
-        var result = game.PlaceWithBounces(tileX, tileY, quarterTurns, bounces);
         Assert.That(result.IsAccepted, Is.True, result.Rejection?.Message);
         return result;
     }

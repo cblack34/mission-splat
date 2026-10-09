@@ -52,7 +52,9 @@ public sealed class LocalSession : ISession
             return SessionResult.Reject(blocked);
         }
 
-        var result = StartedGame().Place(placement.TileX, placement.TileY, placement.QuarterTurnsClockwise);
+        var result = StartedGame().Apply(
+            seat,
+            new Place(placement.TileX, placement.TileY, placement.QuarterTurnsClockwise));
         if (!result.IsAccepted)
         {
             return SessionResult.Reject(Required(result.Rejection));
@@ -71,7 +73,9 @@ public sealed class LocalSession : ISession
             return PlacementPreview.Reject(blocked);
         }
 
-        var result = StartedGame().Place(placement.TileX, placement.TileY, placement.QuarterTurnsClockwise);
+        var result = StartedGame().Apply(
+            seat,
+            new Place(placement.TileX, placement.TileY, placement.QuarterTurnsClockwise));
         if (!result.IsAccepted)
         {
             return PlacementPreview.Reject(Required(result.Rejection));
