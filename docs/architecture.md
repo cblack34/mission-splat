@@ -34,7 +34,7 @@ A tap becomes an action. The session hands it to the match. The match asks the r
 
 The only types that cross the Unity boundary are actions, events, seat-scoped views, legal-move query results, the render model, and the two interfaces. Prefabs, touch, and scenes do not appear in Rules or App. Anything handed to a seat, event or view, is scoped to that seat: another seat's unclaimed mission identities never appear in it. Claimed missions are public. A seat view includes the one match tile the next placement will consume, that tile's four cells, and which of its power cells are still unused. The rest of either deck stays hidden, and after the game has ended that next tile is absent. The local UPM package holds both the Rules and App DLLs; there is no second package and no NuGet feed inside Unity.
 
-The action set is closed per ruleset and typed, never a string: use rotate, use bounce, place. Adding one is a change the compiler can point at. The GUI never decides legality: it highlights what the session reports and submits what was tapped; the rules engine accepts or rejects. The powers in play are setup data. A rotate, stack, or bounce symbol the setup does not list is a blank. The match can list the powers in play so a GUI can refuse to start a game it cannot present. Adding a power touches a closed set of places: a symbol in the catalog, one action type with its legality, effect, and event in the rules engine, and a GUI target shape only if the power needs one the GUI does not already have.
+The action set is closed per ruleset and typed, never a string: use rotate, use bounce, place. Adding one is a change the compiler can point at. The GUI never decides legality: it highlights what the session reports and submits what was tapped; the rules engine accepts or rejects. The powers in play are setup data. A rotate, stack, or bounce symbol the setup does not list is a blank. The match can list the powers in play so a GUI can refuse to start a game it cannot present. Adding a power touches a closed set of places: a symbol in the catalog, typed legality and effect in the rules engine, and a GUI target shape only if the power needs one the GUI does not already have. A power adds its own action type and event only when it is used independently of the placement, as rotate and bounce are before it. A power that only changes where the drawn tile may go, as stack does, rides on `Place` and `TilePlaced` and adds neither.
 
 ## Illustrative sketch
 
@@ -90,11 +90,13 @@ GUI  (Unity today, anything tomorrow)
   on tap:          build the action, submit it — never compute legality
 
 ONLINE LATER
-  same actions, same events, same driver; Session = RemoteSession that posts Apply to a server and renders what comes back
+  same actions, same events, same driver; Session = RemoteSession that posts Apply to a server and returns the resulting state and events; the driver builds the render model and the GUI draws it, as with LocalSession
 
 ADDING A POWER
   data:   a symbol in the catalog               (setup data — already exists)
-  rules:  one action type, its legality, its board effect, its event
+  rules:  typed legality and board effect, always
+          plus a distinct action type and event only if the power is used independently of the placement (rotate, bounce);
+          a power that only changes where the drawn tile may go (stack) rides on Place and TilePlaced(covered?)
   GUI:    only if it needs a target shape the GUI doesn't already have
   AI:     optional — the AI may keep declining powers
 ```

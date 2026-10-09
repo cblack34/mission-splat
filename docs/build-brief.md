@@ -23,7 +23,7 @@ Intended users are the people at the table, including a child who can follow a s
 
 ## Out of scope
 
-- A network room, accounts, matchmaking, and `RemoteSession`. The interfaces exist so a later adapter can send the same action and render returned events.
+- A network room, accounts, matchmaking, and `RemoteSession`. The interfaces exist so a later adapter can send the same action and expose the returned state and events; the turn driver and the GUI consume them, and the adapter renders nothing.
 - WebGL or a browser client. Unity web builds are a rejected path for this horizon.
 - Store listing, purchases, ads, and platform services.
 - More than four seats.
