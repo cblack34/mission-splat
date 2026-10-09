@@ -28,7 +28,7 @@ Rules has two parts with a named seam.
 - **Deck content** (App) is the named decks and catalogs: original, not the census. A seeded shuffle at the edge orders them before `Start`, so a game can be replayed. Automated play keeps a fixed order. The ordinary win count stays 4.
 - **Unity player** owns the setup form, the table view, and the composition root. It submits a human's tap as an action for the current seat and draws the render model. It computes no legality, runs no turn loop, holds no deck, and reaches Rules and App only through the local UPM package.
 
-A tap becomes an action. The session hands it to the match. The match asks the rules engine, applies it, and returns events. The driver renders the current seat's view, built from the match's state, not by replaying events; events are for animation, history, and shipping over a network. On an automated seat, the driver asks `IPlayer` for the next action. Pass-and-play is 2–4 human seats submitting on one `LocalSession`.
+A tap becomes an action. The session hands it to the match. The match asks the rules engine, applies it, and returns events. The driver builds the render model for the current seat's view from the match's state, not by replaying events, and the GUI draws it; events are for animation, history, and shipping over a network. On an automated seat, the driver asks `IPlayer` for the next action. Pass-and-play is 2–4 human seats submitting on one `LocalSession`.
 
 ## Contracts
 
