@@ -108,6 +108,49 @@ public sealed class Game
         };
     }
 
+    // Read-only and total: no drawn tile, an ended game, or quarter-turns outside 0..3 yield nothing, never an exception.
+    public IReadOnlyList<LegalPlacement> LegalPlacements(int quarterTurnsClockwise)
+    {
+        if (PendingMatchTile is not { } tile || quarterTurnsClockwise is < 0 or > 3)
+        {
+            return [];
+        }
+
+        var legal = new List<LegalPlacement>();
+        foreach (var position in PlacementCandidates())
+        {
+            if (PlacementRefusal(tile, position.TileX, position.TileY) is null)
+            {
+                legal.Add(new LegalPlacement(position.TileX, position.TileY, KindAt(position.TileX, position.TileY)));
+            }
+        }
+
+        return legal;
+    }
+
+    public IReadOnlyList<BoardPosition> LegalTargets(SymbolId power)
+    {
+        if (PendingMatchTile is not { } tile || !IsUsePower(power) || Remaining(tile, power, Spent(power)) == 0)
+        {
+            return [];
+        }
+
+        var targets = new List<BoardPosition>();
+        foreach (var coord in _grid.TilePositions)
+        {
+            if (!power.Equals(OrdinaryCatalog.Rotate) || !IsSurrounded(coord.X, coord.Y))
+            {
+                targets.Add(new BoardPosition(coord.X, coord.Y));
+            }
+        }
+
+        return Sorted(targets);
+    }
+
+    // Stack is not counted: it is no separate use, only the on-top option inside a placement.
+    public int RemainingUses(SymbolId power) =>
+        PendingMatchTile is { } tile && IsUsePower(power) ? Remaining(tile, power, Spent(power)) : 0;
+
     public IReadOnlyList<Mission> Hand(SeatId seat) => Copy(Find(seat).Hand);
 
     public IReadOnlyList<Mission> Claims(SeatId seat) => Copy(Find(seat).Claims);
@@ -286,43 +329,89 @@ public sealed class Game
         }
 
         var tile = DrawnTile();
+        var refusal = PlacementRefusal(tile, place.TileX, place.TileY);
+        if (refusal is not null)
+        {
+            return CommandResult.Reject(this, refusal);
+        }
+
         var located = tile.CellsAt(place.TileX, place.TileY, place.QuarterTurnsClockwise);
         TileId? covered = null;
         Grid grid;
-        if (_grid.TileCount == 0)
+        if (KindAt(place.TileX, place.TileY) == PlacementKind.OnTop)
         {
-            if (place.TileX != 0 || place.TileY != 0)
-            {
-                return Reject(RejectionReason.NotAtOrigin, "An empty board takes the drawn tile only at the origin.");
-            }
-
-            grid = _grid.Place(place.TileX, place.TileY, tile, located);
-        }
-        else if (_grid.HasTile(place.TileX, place.TileY))
-        {
-            if (!ShowsStack(tile))
-            {
-                return Reject(RejectionReason.CellOccupied, "That position is already occupied.");
-            }
-
             grid = _grid.Cover(place.TileX, place.TileY, tile, located);
             var buried = grid.CoveredTileIds(place.TileX, place.TileY);
             covered = buried[buried.Count - 1];
         }
         else
         {
-            if (!_grid.SharesFullSide(place.TileX, place.TileY))
-            {
-                return Reject(
-                    RejectionReason.DoesNotShareFullSide,
-                    "A tile has to share a full side with a tile already on the board.");
-            }
-
             grid = _grid.Place(place.TileX, place.TileY, tile, located);
         }
 
         return ResolvePlacement(tile, place, grid, located, covered);
     }
+
+    // The single placement decision, shared by Apply and LegalPlacements so they cannot disagree. Orientation only
+    // changes which cells are written, never where the tile may go.
+    private Rejection? PlacementRefusal(Tile tile, int tileX, int tileY)
+    {
+        if (_grid.TileCount == 0)
+        {
+            return tileX == 0 && tileY == 0
+                ? null
+                : new Rejection(RejectionReason.NotAtOrigin, "An empty board takes the drawn tile only at the origin.");
+        }
+
+        if (_grid.HasTile(tileX, tileY))
+        {
+            return ShowsStack(tile)
+                ? null
+                : new Rejection(RejectionReason.CellOccupied, "That position is already occupied.");
+        }
+
+        return _grid.SharesFullSide(tileX, tileY)
+            ? null
+            : new Rejection(
+                RejectionReason.DoesNotShareFullSide,
+                "A tile has to share a full side with a tile already on the board.");
+    }
+
+    private PlacementKind KindAt(int tileX, int tileY) =>
+        _grid.HasTile(tileX, tileY) ? PlacementKind.OnTop : PlacementKind.Beside;
+
+    // Every position the drawn tile could be offered: each occupied one and its four neighbors, or the origin alone.
+    private List<BoardPosition> PlacementCandidates()
+    {
+        var candidates = new HashSet<BoardPosition>();
+        if (_grid.TileCount == 0)
+        {
+            candidates.Add(new BoardPosition(0, 0));
+        }
+
+        foreach (var coord in _grid.TilePositions)
+        {
+            candidates.Add(new BoardPosition(coord.X, coord.Y));
+            candidates.Add(new BoardPosition(coord.X + 1, coord.Y));
+            candidates.Add(new BoardPosition(coord.X - 1, coord.Y));
+            candidates.Add(new BoardPosition(coord.X, coord.Y + 1));
+            candidates.Add(new BoardPosition(coord.X, coord.Y - 1));
+        }
+
+        return Sorted(candidates);
+    }
+
+    private static List<BoardPosition> Sorted(IEnumerable<BoardPosition> positions)
+    {
+        var sorted = new List<BoardPosition>(positions);
+        sorted.Sort((a, b) => a.TileX != b.TileX ? a.TileX.CompareTo(b.TileX) : a.TileY.CompareTo(b.TileY));
+        return sorted;
+    }
+
+    private static bool IsUsePower(SymbolId power) =>
+        power.Equals(OrdinaryCatalog.Rotate) || power.Equals(OrdinaryCatalog.Bounce);
+
+    private int Spent(SymbolId power) => power.Equals(OrdinaryCatalog.Rotate) ? _spent.Rotates : _spent.Bounces;
 
     // Every Apply that reaches a tile consumes the front match tile. An empty deck is the same open ruling for each.
     private Tile DrawnTile()

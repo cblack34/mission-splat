@@ -28,6 +28,8 @@ internal sealed class Grid
 
     public int TileCount => _tiles.Count;
 
+    public IEnumerable<TileCoord> TilePositions => _tiles.Keys;
+
     public bool HasTile(int tileX, int tileY) => _tiles.ContainsKey(new TileCoord(tileX, tileY));
 
     public IReadOnlyList<TileId> CoveredTileIds(int tileX, int tileY)
