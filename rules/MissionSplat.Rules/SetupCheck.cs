@@ -134,12 +134,6 @@ internal static class SetupCheck
         return null;
     }
 
-    // An unlisted rotate, stack, or bounce is read as a blank, so a tile may still print it.
-    private static bool IsPower(SymbolId symbol) =>
-        symbol.Equals(OrdinaryCatalog.Rotate)
-        || symbol.Equals(OrdinaryCatalog.Stack)
-        || symbol.Equals(OrdinaryCatalog.Bounce);
-
     private static Rejection? CellProblem(
         Cell cell,
         HashSet<ColorId> colors,
@@ -163,7 +157,8 @@ internal static class SetupCheck
 
         if (cell.TryGetSymbol(out var symbol))
         {
-            if (!symbols.Contains(symbol) && !IsPower(symbol))
+            // An unlisted power is read as a blank, so a tile may still print it.
+            if (!symbols.Contains(symbol) && !OrdinaryCatalog.IsPower(symbol))
             {
                 return Invalid($"Tile '{tile.Value}' uses symbol '{symbol.Value}', which is not a non-scoring symbol.");
             }

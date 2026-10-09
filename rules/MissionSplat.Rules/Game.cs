@@ -130,7 +130,7 @@ public sealed class Game
 
     public IReadOnlyList<BoardPosition> LegalTargets(SymbolId power)
     {
-        if (PendingMatchTile is not { } tile || !IsUsePower(power) || Remaining(tile, power, Spent(power)) == 0)
+        if (PendingMatchTile is not { } tile || !OrdinaryCatalog.IsUsePower(power) || Remaining(tile, power, Spent(power)) == 0)
         {
             return [];
         }
@@ -138,7 +138,7 @@ public sealed class Game
         var targets = new List<BoardPosition>();
         foreach (var coord in _grid.TilePositions)
         {
-            if (!power.Equals(OrdinaryCatalog.Rotate) || !IsSurrounded(coord.X, coord.Y))
+            if (TargetRefusal(power, coord.X, coord.Y) is null)
             {
                 targets.Add(new BoardPosition(coord.X, coord.Y));
             }
@@ -149,7 +149,7 @@ public sealed class Game
 
     // Stack is not counted: it is no separate use, only the on-top option inside a placement.
     public int RemainingUses(SymbolId power) =>
-        PendingMatchTile is { } tile && IsUsePower(power) ? Remaining(tile, power, Spent(power)) : 0;
+        PendingMatchTile is { } tile && OrdinaryCatalog.IsUsePower(power) ? Remaining(tile, power, Spent(power)) : 0;
 
     public IReadOnlyList<Mission> Hand(SeatId seat) => Copy(Find(seat).Hand);
 
@@ -277,14 +277,10 @@ public sealed class Game
             return Reject(RejectionReason.NoUseRemaining, "The drawn tile has no unused rotate cell.");
         }
 
-        if (!_grid.HasTile(rotate.TileX, rotate.TileY))
+        var refusal = TargetRefusal(OrdinaryCatalog.Rotate, rotate.TileX, rotate.TileY);
+        if (refusal is not null)
         {
-            return Reject(RejectionReason.NoTileToRotate, "There is no tile at that position to rotate.");
-        }
-
-        if (IsSurrounded(rotate.TileX, rotate.TileY))
-        {
-            return Reject(RejectionReason.TileSurrounded, "That tile is completely surrounded.");
+            return CommandResult.Reject(this, refusal);
         }
 
         var grid = _grid.TurnClockwise(rotate.TileX, rotate.TileY, rotate.QuarterTurnsClockwise);
@@ -302,9 +298,10 @@ public sealed class Game
             return Reject(RejectionReason.NoUseRemaining, "The drawn tile has no unused bounce cell.");
         }
 
-        if (!_grid.HasTile(bounce.TileX, bounce.TileY))
+        var refusal = TargetRefusal(OrdinaryCatalog.Bounce, bounce.TileX, bounce.TileY);
+        if (refusal is not null)
         {
-            return Reject(RejectionReason.NoTileToBounce, "There is no tile at that position to bounce.");
+            return CommandResult.Reject(this, refusal);
         }
 
         var buried = _grid.CoveredTileIds(bounce.TileX, bounce.TileY);
@@ -377,6 +374,22 @@ public sealed class Game
                 "A tile has to share a full side with a tile already on the board.");
     }
 
+    // The single target decision for a use power, shared by Apply and LegalTargets so they cannot disagree.
+    private Rejection? TargetRefusal(SymbolId power, int tileX, int tileY)
+    {
+        var isRotate = power.Equals(OrdinaryCatalog.Rotate);
+        if (!_grid.HasTile(tileX, tileY))
+        {
+            return isRotate
+                ? new Rejection(RejectionReason.NoTileToRotate, "There is no tile at that position to rotate.")
+                : new Rejection(RejectionReason.NoTileToBounce, "There is no tile at that position to bounce.");
+        }
+
+        return isRotate && IsSurrounded(tileX, tileY)
+            ? new Rejection(RejectionReason.TileSurrounded, "That tile is completely surrounded.")
+            : null;
+    }
+
     private PlacementKind KindAt(int tileX, int tileY) =>
         _grid.HasTile(tileX, tileY) ? PlacementKind.OnTop : PlacementKind.Beside;
 
@@ -407,9 +420,6 @@ public sealed class Game
         sorted.Sort((a, b) => a.TileX != b.TileX ? a.TileX.CompareTo(b.TileX) : a.TileY.CompareTo(b.TileY));
         return sorted;
     }
-
-    private static bool IsUsePower(SymbolId power) =>
-        power.Equals(OrdinaryCatalog.Rotate) || power.Equals(OrdinaryCatalog.Bounce);
 
     private int Spent(SymbolId power) => power.Equals(OrdinaryCatalog.Rotate) ? _spent.Rotates : _spent.Bounces;
 

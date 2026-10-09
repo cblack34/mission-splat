@@ -27,4 +27,9 @@ public static class OrdinaryCatalog
         [MissionPattern.Row, MissionPattern.Square, MissionPattern.L];
 
     public const int ClaimsRequiredToWin = 4;
+
+    internal static bool IsPower(SymbolId symbol) => symbol.Equals(Rotate) || symbol.Equals(Stack) || symbol.Equals(Bounce);
+
+    // Stack is the placement power, not a use: it has no separate action, only the on-top option inside a placement.
+    internal static bool IsUsePower(SymbolId symbol) => IsPower(symbol) && !symbol.Equals(Stack);
 }
