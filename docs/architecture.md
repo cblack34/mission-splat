@@ -4,7 +4,7 @@ Descriptive. Code wins after it exists; update this document when a boundary cha
 
 ## Containers
 
-The POC is one process on the device. The later room is the same command and event seam, drawn dashed in [`diagrams/c4.svg`](diagrams/c4.svg).
+The POC is one process on the device. The later room is the same action and event seam, drawn dashed in [`diagrams/c4.svg`](diagrams/c4.svg).
 
 ```text
 rules/                 netstandard2.1 rules library and dotnet test

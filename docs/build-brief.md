@@ -23,7 +23,7 @@ Intended users are the people at the table, including a child who can follow a s
 
 ## Out of scope
 
-- A network room, accounts, matchmaking, and `RemoteSession`. The interfaces exist so a later adapter can send the same command and render returned events.
+- A network room, accounts, matchmaking, and `RemoteSession`. The interfaces exist so a later adapter can send the same action and render returned events.
 - WebGL or a browser client. Unity web builds are a rejected path for this horizon.
 - Store listing, purchases, ads, and platform services.
 - More than four seats.
@@ -34,7 +34,7 @@ Intended users are the people at the table, including a child who can follow a s
 
 1. **Rules stay engine-free.** The domain library references no `UnityEngine` type. Failure: a server or `dotnet test` cannot judge a move without the editor. Verification: `dotnet test` on the rules solution, with no Unity reference in that project.
 2. **Claim is placement-owned.** A pattern on your mission scores only if the tile you just placed completed it. Failure: another seat's tile completes your card and you take the claim. Verification: rules fixtures for both the legal claim and the stolen-pattern rejection.
-3. **Offline multiplayer is local.** Two to four human adapters share one `LocalSession`. Failure: pass-and-play opens a socket or requires a second device. Verification: human observation of a 3-seat game on one player, plus an automated test that four human command sources can alternate on `LocalSession`.
+3. **Offline multiplayer is local.** Two to four human seats share one `LocalSession`. Failure: pass-and-play opens a socket or requires a second device. Verification: human observation of a 3-seat game on one player, plus an automated test that four human seats can alternate submitting actions on `LocalSession`.
 4. **No copied trade dress.** Original splat shapes and original names only. Failure: a farm character, the physical product name, or a source photo lands in the tree or the player. Verification: review of the diff and of the built content.
 
 ## Architecture boundaries and contracts
