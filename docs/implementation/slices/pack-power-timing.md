@@ -96,9 +96,9 @@ None.
 
 Complete once when the final PR is ready for human merge. Do not use this section for WIP status.
 
-- **Outcome:**
-- **Verification:**
-- **Deviations:**
-- **Unresolved gates or risks:**
-- **Refactor and handoff receipt:**
-- **Final PR:**
+- **Outcome:** `rules.md` states the corrected turn: draw, use each rotate or bounce cell one at a time on tiles already on the board, place, claim; any board tile is a target and the drawn tile never is; a bounce may empty the board and the origin is then the only placement; stack is the placement on an occupied position; only the placed tile's written cells claim; powers in play are setup data. `acceptance.md` checks each. `build-brief.md` names the rules-engine/match seam inside Rules, places the session, turn driver, and deck content in App, and reduces the Unity player to setup, input, and render. `architecture.md` carries the roles, the action/event/query contract, the composability direction, an illustrative sketch, and a Shipped state section naming where code lags. The C4 diagram's text nodes match.
+- **Verification:** Both definition-of-done commands green on the PR head (135 and 15 tests), run for the record with no code changed. Relative links resolve. A fresh-context read-only review of the five files against the eight session rulings found no remaining contradiction after four fixes; evidence is in the PR body.
+- **Deviations:** Two sentences are derivations rather than direct maintainer answers and are flagged on the PR for confirmation: only the placed tile's cells claim after a power, and an accepted use stays applied when a later use or the placement is rejected. The C4 diagram was amended (text only) although the plan listed it as "checked"; its caption and two component boxes named the superseded design.
+- **Unresolved gates or risks:** The census, deck exhaustion, a drawn tile with no legal placement on a non-empty board, and the two-different-powers ruleset question stay open. Shipped code lags the pack until the corrected Rules actions, the match/rules split, and the App session and turn driver land.
+- **Refactor and handoff receipt:** In the PR body, https://github.com/cblack34/mission-splat/pull/22, and on https://github.com/cblack34/mission-splat/issues/21.
+- **Final PR:** https://github.com/cblack34/mission-splat/pull/22
