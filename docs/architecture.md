@@ -21,8 +21,8 @@ Names are illustrative. The dependency rule is not: Unity consumes Rules and App
 Rules has two parts with a named seam.
 
 - **Rules engine** (Rules) is stateless. Given the board, the drawn tile, the acting seat's hand, and the catalog, it answers: where the drawn tile may legally go at an orientation, as positions tagged beside or on-top, where on-top appears only when the drawn tile shows stack and an empty board yields only the origin; which board tiles a rotate or bounce may act on; what a use does to the board; and which of the hand's missions the placed tile's cells completed. It knows nothing of seat count, turn order, decks, or scores. `Grid`, `Tile`, and `PatternSearch` are its internals. Each power's legality and effect lives in its own part of the engine; a ruleset enables a set of them.
-- **Match** (Rules) is the game in progress: seats in turn order, hands, both decks, claim rows, the current seat, and the turn phase — which rotate or bounce cells on the drawn tile are still unused. It accepts one action from the current seat, asks the rules engine, applies the bookkeeping, and returns the next match with the events that say what happened. A rejected action returns the same match. Setup does not claim. A placement can return more than one claimed event, then won when the configured count is met. There is no wildcard-chosen event: a wild cell stays wild, and each mission check counts it as that mission's color. The match never shuffles; decks arrive ordered. Setup supplies the color catalog, the non-scoring symbols that are the powers in play, the active patterns, and the claims required to win.
-- **ISession** (App) is the seam a GUI talks to: start, the view for a seat, submit an action for a seat, and the legal-move queries forwarded from the match. **LocalSession** wraps one match in process. **RemoteSession** is not in the POC; when it exists it implements the same interface and stays outside Unity.
+- **Match** (Rules) is the game in progress: seats in turn order, hands, both decks, claim rows, the current seat, and the turn phase — which rotate or bounce cells on the drawn tile are still unused. It accepts one action from the current seat, asks the rules engine, applies the bookkeeping, and returns the next match with the events that say what happened. A rejected action returns the same match. Setup does not claim. A placement can return more than one claimed event, then won when the configured count is met. There is no wildcard-chosen event: a wild cell stays wild, and each mission check counts it as that mission's color. The match never shuffles; decks arrive ordered. Setup supplies the color catalog, the non-scoring symbols (those of them that are rotate, stack, or bounce are the powers in play), the active patterns, and the claims required to win.
+- **ISession** (App) is the seam a GUI and the turn driver talk to: start, which seat is current, the view for a seat, submit an action for a seat, and the legal-move queries forwarded from the match. **LocalSession** wraps one match in process. **RemoteSession** is not in the POC; when it exists it implements the same interface and stays outside Unity.
 - **Turn driver** (App) runs the table: which seats are automated, running them after each accepted action until a human seat is current, the hand-off between humans on one device, and the render model a GUI draws.
 - **IPlayer** (App) is the action source for an automated seat. **AiPlayer** chooses from its own missions and the public board, and may decline every power.
 - **Deck content** (App) is the named decks and catalogs: original, not the census. A seeded shuffle at the edge orders them before `Start`, so a game can be replayed. Automated play keeps a fixed order. The ordinary win count stays 4.
@@ -79,9 +79,10 @@ MATCH
 
 TURN DRIVER  (lives in App; identical for any GUI)
   loop until GameWon or an unresolved ruling:
-    seat = match.currentSeat
+    seat = session.currentSeat                      # the driver goes through the session, never a Match, so RemoteSession fits
     if seat is AI:   action = ai.choose(session.view(seat)); session.submit(seat, action)
-    else:            conceal the hand until this seat confirms it holds the device
+    else:            if control moved to a different human seat: conceal the hand until that seat confirms it holds the device
+                     # a power use leaves the same seat current, so it does not re-conceal
                      render(model(session.view(seat))); wait for GUI submit(seat, action)
 
 GUI  (Unity today, anything tomorrow)

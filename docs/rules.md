@@ -17,7 +17,7 @@ Names below are original. They describe the same structure as the photographed i
 
 The library does not shuffle. It takes the seats in turn order, the first seat, the color catalog, the non-scoring symbols, the patterns in play, the claims required to win, and the mission and match decks already ordered. The base deck is [`census.md`](census.md). A fixture may use a smaller deck if it names that deck. The ordinary game uses the ordinary catalog above and 4 claims. Setup can pass another positive count.
 
-The non-scoring symbols passed at setup are the powers in play. A rotate, stack, or bounce symbol that setup does not list is read as a blank: it does not score and grants no use.
+Of the non-scoring symbols passed at setup, those that are rotate, stack, or bounce are the powers in play. Any other listed symbol is non-scoring and grants no use. A rotate, stack, or bounce symbol that setup does not list is read as a blank: it does not score and grants no use.
 
 1. Deal two missions from the front of the mission deck to each seat, in the seat order given to setup.
 2. Place the front match tile at the origin of the board, in the orientation it has in the deck.
@@ -27,7 +27,7 @@ A game has two, three, or four seats. Who is first: the physical rule is the you
 ## Turn
 
 1. The current seat draws the top match tile. It stays in hand until step 3 places it.
-2. If the drawn tile shows rotate or bounce, the seat may use each such cell once, before placing, under the power rules below. A use acts on a tile already on the board; the drawn tile is in hand and is never a target. Uses are chosen one at a time, and each is applied before the next is chosen.
+2. If the drawn tile shows rotate or bounce, the seat may use each such cell once, before placing, under the power rules below. A tile showing two different powers is an open question, listed below, that this step does not decide. A use acts on a tile already on the board; the drawn tile is in hand and is never a target. Uses are chosen one at a time, and each is applied before the next is chosen.
 3. The seat places the drawn tile, choosing a quarter-turn orientation as it is set down. Quarter-turns are clockwise. That choice is part of placement, not the rotate power. Ordinary placement must share at least one full side with a tile already on the board. Corner-only contact is illegal. See [`diagrams/placement.svg`](diagrams/placement.svg). If the drawn tile shows stack, the seat may instead place it on top of a tile already on the board. Stack is this placement, not a separate step. If the board is empty, the drawn tile is placed at the origin.
 4. Resolve claims. Then the next seat plays.
 
@@ -70,14 +70,14 @@ The ordinary win count is 4. Setup can require a different positive count. The f
 
 ## Powers
 
-A power is printed on the tile that was drawn. Rotate and bounce are used before that tile is placed, one use per cell, each on a tile already on the board. Stack changes where that tile may be placed. Using a power is optional unless a later ruling says otherwise. The photographs describe these effects. See [`diagrams/power-ups.svg`](diagrams/power-ups.svg).
+A power is printed on the tile that was drawn. Rotate and bounce are used before that tile is placed, one use per cell, each on a tile already on the board. Stack changes where that tile may be placed. On a tile whose power cells are all the same power, using that power is optional; a tile showing two different powers is an open question, listed below. The photographs describe these effects. See [`diagrams/power-ups.svg`](diagrams/power-ups.svg).
 
 - **Rotate.** Turn one tile on the board by one, two, or three clockwise quarter-turns if that tile is not completely surrounded. Completely surrounded means all four orthogonal neighbors are occupied, counting only tiles on the board. Only the chosen tile's visible cells turn. Turning a tile awards no claim by itself; claims are resolved from the placement that follows.
 - **Stack.** Place the drawn tile on top of any tile on the board instead of beside it. The top tile's cells are the cells that match at that position. The covered tiles remain under that position until a bounce uncovers the top one.
 - **Bounce.** Remove any one tile from the board and put it on the bottom of the draw deck. If the named position has a tile buried beneath it, only the top tile is removed; the tile beneath becomes visible again, with the cells it had at the moment it was covered, not the cells its own placement orientation would otherwise show. If the named position has no buried tile, the position is removed from the board entirely. The drawn tile is in hand and cannot be bounced. A bounce may empty the board; the drawn tile is then placed at the origin. A bounce may split the board into separate regions with no shared side between them; that is legal. The photographs never address board connectivity, and nothing else in these rules requires the board to stay one connected cluster.
 - **Blank.** No effect.
 
-A tile may show more than one power cell. Each rotate or bounce cell on the drawn tile may be used once on the turn it is drawn. Stack is not a repeatable action: one or more stack cells on the drawn tile grant the optional stack placement once, and extra stack cells do not grant a second placement. Powers on tiles already on the board are not reused. The base deck has no tile showing two different powers; whether a seat may use one and pass on the other is a ruleset question, open until a deck has such a tile.
+A tile may show more than one cell of the same power. Each rotate or bounce cell on the drawn tile may be used once on the turn it is drawn. Stack is not a repeatable action: one or more stack cells on the drawn tile grant the optional stack placement once, and extra stack cells do not grant a second placement. Powers on tiles already on the board are not reused. The base deck has no tile showing two different powers. Whether such a tile is allowed, and whether a seat may use one of its powers and pass on the other, is a ruleset question, open until a deck has such a tile. The statements above about using each cell do not decide it.
 
 ## AI
 
@@ -89,5 +89,5 @@ These are open. Do not invent a ruling in code without returning to the user.
 
 - The base deck is [`census.md`](census.md): four colors, one line, one L, and one square each, and 30 match tiles. Uncorrected rows in that table still need the maintainer's pass before encoding.
 - A drawn tile that has no legal orthogonal neighbor and no stack power, on a board that is not empty.
-- A drawn tile that shows two different powers: whether one may be used and the other passed.
+- A drawn tile that shows two different powers: whether one may be used and the other passed. The turn and power rules above cover a tile whose power cells are all one power.
 - Mission deck exhausted when a replacement is due, and match-tile deck exhausted on a draw: not printed. Return to the user.
