@@ -16,14 +16,14 @@ Intended users are the people at the table, including a child who can follow a s
 
 - The rules in [`rules.md`](rules.md): setup, orthogonal placement, three mission shapes, claim-on-your-placement, power cells, and a win at the configured claim count, which is four in the ordinary game.
 - A rules library a `dotnet test` run can execute with no Unity editor.
-- An application library with `ISession` and `IPlayer`, a `LocalSession` adapter, and an `AiPlayer` adapter that does not see any other seat's secret missions.
-- A Unity player that renders the board, the secret hand, the face-up claim row, and legal placement highlights, and that binds 2–4 seats to `LocalSession`.
+- An application library with `ISession` and `IPlayer`, a `LocalSession` adapter, an `AiPlayer` adapter that does not see any other seat's secret missions, the turn driver that runs AI seats and hands the device between humans, and the named deck content.
+- A Unity player that collects setup, renders the board, the secret hand, the face-up claim row, and the legal moves the session reports, and submits a tap as an action for 2–4 seats on `LocalSession`. It computes no legality and runs no turn loop.
 - Pass-and-play on one device, and human versus AI on one device.
 - Schematic diagrams in [`diagrams/`](diagrams/) as the visual reference. Source photographs stay out of the repo.
 
 ## Out of scope
 
-- A network room, accounts, matchmaking, and `RemoteSession`. The interfaces exist so a later adapter can send the same command and render returned events.
+- A network room, accounts, matchmaking, and `RemoteSession`. The interfaces exist so a later adapter can send the same action and expose the returned state and events; the turn driver and the GUI consume them, and the adapter renders nothing.
 - WebGL or a browser client. Unity web builds are a rejected path for this horizon.
 - Store listing, purchases, ads, and platform services.
 - More than four seats.
@@ -34,17 +34,17 @@ Intended users are the people at the table, including a child who can follow a s
 
 1. **Rules stay engine-free.** The domain library references no `UnityEngine` type. Failure: a server or `dotnet test` cannot judge a move without the editor. Verification: `dotnet test` on the rules solution, with no Unity reference in that project.
 2. **Claim is placement-owned.** A pattern on your mission scores only if the tile you just placed completed it. Failure: another seat's tile completes your card and you take the claim. Verification: rules fixtures for both the legal claim and the stolen-pattern rejection.
-3. **Offline multiplayer is local.** Two to four human adapters share one `LocalSession`. Failure: pass-and-play opens a socket or requires a second device. Verification: human observation of a 3-seat game on one player, plus an automated test that four human command sources can alternate on `LocalSession`.
+3. **Offline multiplayer is local.** Two to four human seats share one `LocalSession`. Failure: pass-and-play opens a socket or requires a second device. Verification: human observation of a 3-seat game on one player, plus an automated test that four human seats can alternate submitting actions on `LocalSession`.
 4. **No copied trade dress.** Original splat shapes and original names only. Failure: a farm character, the physical product name, or a source photo lands in the tree or the player. Verification: review of the diff and of the built content.
 
 ## Architecture boundaries and contracts
 
 Canonical rules behavior is [`rules.md`](rules.md). The C4 ownership cut is [`architecture.md`](architecture.md) and [`diagrams/c4.svg`](diagrams/c4.svg).
 
-- `Rules` owns the board, placement, power resolution, matching, and claim. It accepts a command and returns events.
-- `App` owns `ISession` and `IPlayer`. `LocalSession` and `AiPlayer` are adapters in `App`.
-- The Unity player owns `HumanPlayer`, the table view, and the composition root. It does not reimplement matching.
-- A later room service would reference the same rules library and accept a command only if that library accepts it. It is not built in this horizon.
+- `Rules` owns two parts with a named seam. A stateless rules engine judges one action against the board, the drawn tile, the acting seat's hand, and the catalog: where the drawn tile may go, which board tiles a power may act on, what a use does, and which missions the placement completed. The match owns seats, hands, decks, claim rows, the current seat, and the turn phase; it accepts one action from a closed, typed set per ruleset — use rotate, use bounce, place — and returns the next match with events. The board a seat renders comes from the match.
+- `App` owns `ISession` and `IPlayer`. `LocalSession` and `AiPlayer` are adapters in `App`. `App` also owns the turn driver (which seats are automated, running them, the hand-off between humans, the render model a GUI draws) and the deck content. `IPlayer` is the action source for an automated seat.
+- The Unity player owns the setup form, the table view, and the composition root. It submits a human's tap as an action and renders what the session reports. It computes no legality, runs no turn loop, holds no deck, and does not reimplement matching.
+- A later room service would reference the same rules library and accept an action only if that library accepts it. It is not built in this horizon.
 
 ## Research, decisions, and open gates
 
@@ -57,13 +57,17 @@ Adopted from the design session, not from a second implementation:
 - A wildcard stays wild. Each mission check counts it as that mission's color. Nothing stores a chosen color.
 - One placement claims every secret mission the acting seat holds that the placement completed. The turn then passes once.
 - The ordinary win count is 4. Setup can require another positive count.
-- Colors, non-scoring symbols, the patterns in play, and the win count are setup data. The ordinary catalog is red, blue, green, purple, blank, rotate, stack, bounce, a wildcard cell, and the row, square, and L.
+- Colors, non-scoring symbols, the patterns in play, and the win count are setup data. The ordinary catalog is red, blue, green, purple, blank, rotate, stack, bounce, a wildcard cell, and the row, square, and L. Of the non-scoring symbols setup lists, those that are rotate, stack, or bounce are the powers in play; any other listed symbol is non-scoring with no power, and a power symbol setup does not list is a blank.
+- Rotate and bounce are used before the drawn tile is placed, one use per cell, one at a time, each on a tile already on the board. The drawn tile is never a target. A bounce may empty the board; an empty board accepts the drawn tile only at the origin. Stack is the placement itself, on an occupied position. Decided 2026-10-09 from the physical game, replacing an earlier after-placement reading.
+- Only the cells the placed tile wrote complete a mission. A power reshapes the board and never claims on its own.
+- The match accepts one action type per ruleset: a closed, typed set, never a string. Powers are composable: each power's legality and effect lives in its own part of the rules engine, and a ruleset enables a set of them. Whether customization ships as preset rulesets or per-power toggles is decided when a second ruleset is wanted.
 
 Assumptions, labeled as such:
 
 - A stacked tile's cells replace the covered tile's cells for matching.
-- "Completely surrounded" means all four orthogonal neighbors are occupied.
+- "Completely surrounded" means all four orthogonal neighbors are occupied, counting only tiles on the board.
 - The first seat is an explicit start input. Rules do not compute youngest. With an AI seat, the human chooses.
+- An accepted power use stays applied when a later use or the placement is rejected; the seat chooses again.
 
 The base deck is [`census.md`](census.md). A fixture may use a smaller deck if it names that deck. A claim that the shipped deck matches the physical box uses the census definition.
 
@@ -73,6 +77,8 @@ The base deck is [`census.md`](census.md). A fixture may use a smaller deck if i
 - **Stolen claims.** The other seat completes your pattern. Mitigation: the claim function takes the seat that placed the tile. Detection: a fixture where the pattern exists and the claim is rejected.
 - **Trade-dress leak.** Mitigation: diagrams are original schematics; review rejects photos and farm art.
 - **Unity swallowing the rules.** Mitigation: the rules project has no Unity reference; review rejects `UnityEngine` in that tree.
+- **Unity swallowing the table.** The turn loop and the deck drifted into the Unity player once. Mitigation: the turn driver and deck content live in `App`, with an app test that runs a turn sequence with no Unity reference; review rejects a `MonoBehaviour` that decides whose turn it is. Detection: `dotnet test` on the app solution.
+- **Mid-turn state.** The match now holds a turn phase: which power cells are spent and that the drawn tile is still pending. Mitigation: fixtures for a rejected use leaving the match unchanged, an accepted use staying applied, and a use after the placement rejected.
 
 ## Known dependencies
 
@@ -86,6 +92,8 @@ _This is strategic guidance, not a required sequence. The implementation agent s
 2. Application interfaces, `LocalSession`, and `AiPlayer`, still without Unity.
 3. Unity composition and table view, bound to `LocalSession`.
 4. Desktop player build only if a laptop demo is requested.
+
+After the 2026-10-09 correction, with 1–3 shipped against the earlier reading: the corrected turn actions in Rules; the match/rules-engine split; the session, turn driver, and deck content in `App`; the power UI; then the completing device evidence.
 
 ## Unity tooling
 
