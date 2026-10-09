@@ -45,7 +45,7 @@ public class StackTests
         Assert.That(next.CellAt(3, 0), Is.EqualTo(Cards.Blue));
         Assert.That(next.HasTileAt(0, 0), Is.True);
         Assert.That(next.TileCount, Is.EqualTo(3));
-        Assert.That(Ids(next.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "covered" }));
+        Assert.That(See.Ids(next.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "covered" }));
         Assert.That(next.CoveredTileIds(1, 0), Is.Empty);
         Assert.That(next.CoveredTileIds(0, 1), Is.Empty);
         Assert.That(See.Ids(next.Claims(Cards.Seat("a"))), Is.EqualTo(new[] { "blue-row" }));
@@ -74,7 +74,7 @@ public class StackTests
     [Test]
     public void ExtraStackCells_ConsumeTheTileOnce_AndPassTheTurnOnce()
     {
-        var game = TwoSeatGame(
+        var game = RepresentativeDeck.TwoSeats(
             Cards.BlankTile("start"),
             Cards.Tile("double", Stack, Stack, Cards.Blank, Cards.Blank),
             Cards.BlankTile("next"));
@@ -91,17 +91,17 @@ public class StackTests
         Assert.That(next.PendingMatchTile!.Id.Value, Is.EqualTo("next"));
         Assert.That(next.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
         Assert.That(next.Claims(Cards.Seat("a")), Is.Empty);
-        Assert.That(Ids(next.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "start" }));
+        Assert.That(See.Ids(next.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "start" }));
 
         var again = RepresentativeDeck.Try(next, new Place(0, 0, 0));
-        AssertRejected(next, again, RejectionReason.CellOccupied);
+        Expect.Rejected(next, again, RejectionReason.CellOccupied);
         Assert.That(next.MatchDeckRemaining, Is.EqualTo(1));
     }
 
     [Test]
     public void SecondStack_KeepsTheEarlierCoveredTile_UnderTheNewTop()
     {
-        var game = TwoSeatGame(
+        var game = RepresentativeDeck.TwoSeats(
             Cards.Solid("bottom", Cards.Red),
             Cards.Tile("middle", Cell.Color(OrdinaryCatalog.Green), Stack, Cards.Blank, Cards.Blank),
             Cards.BlankTile("beside"),
@@ -110,25 +110,25 @@ public class StackTests
         var first = RepresentativeDeck.Play(game, 0, 0);
         var coveredOnce = See.Game(first);
         Assert.That(coveredOnce.CellAt(0, 0), Is.EqualTo(Cell.Color(OrdinaryCatalog.Green)));
-        Assert.That(Ids(coveredOnce.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "bottom" }));
+        Assert.That(See.Ids(coveredOnce.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "bottom" }));
         Assert.That(coveredOnce.TileCount, Is.EqualTo(1));
         Assert.That(coveredOnce.HasTileAt(0, 0), Is.True);
         Assert.That(coveredOnce.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
         Assert.That(first.Events, Has.Count.EqualTo(1));
 
         var occupied = RepresentativeDeck.Try(coveredOnce, new Place(0, 0, 0));
-        AssertRejected(coveredOnce, occupied, RejectionReason.CellOccupied);
+        Expect.Rejected(coveredOnce, occupied, RejectionReason.CellOccupied);
 
         var afterBeside = See.Game(RepresentativeDeck.Play(coveredOnce, 1, 0));
-        Assert.That(Ids(afterBeside.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "bottom" }));
+        Assert.That(See.Ids(afterBeside.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "bottom" }));
         Assert.That(afterBeside.CoveredTileIds(1, 0), Is.Empty);
         Assert.That(afterBeside.TileCount, Is.EqualTo(2));
         Assert.That(afterBeside.CellAt(0, 0), Is.EqualTo(Cell.Color(OrdinaryCatalog.Green)));
 
         var second = RepresentativeDeck.Play(afterBeside, 0, 0);
         var coveredTwice = See.Game(second);
-        Assert.That(Ids(coveredTwice.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "bottom", "middle" }));
-        Assert.That(Ids(coveredOnce.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "bottom" }));
+        Assert.That(See.Ids(coveredTwice.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "bottom", "middle" }));
+        Assert.That(See.Ids(coveredOnce.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "bottom" }));
         Assert.That(coveredTwice.CellAt(0, 0), Is.EqualTo(Cards.Blue));
         Assert.That(coveredTwice.CellAt(1, 0), Is.EqualTo(Stack));
         Assert.That(coveredTwice.TileCount, Is.EqualTo(2));
@@ -176,7 +176,7 @@ public class StackTests
         Assert.That(See.Ids(next.Hand(Cards.Seat("a"))), Is.EqualTo(new[] { "green-square", "a2" }));
         Assert.That(stacked.Events, Has.Count.EqualTo(1));
         Assert.That(stacked.Events[0], Is.TypeOf<TilePlaced>());
-        Assert.That(Ids(next.CoveredTileIds(1, 0)), Is.EqualTo(new[] { "pad" }));
+        Assert.That(See.Ids(next.CoveredTileIds(1, 0)), Is.EqualTo(new[] { "pad" }));
         Assert.That(next.CoveredTileIds(0, 0), Is.Empty);
         Assert.That(next.TileCount, Is.EqualTo(3));
         Assert.That(next.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
@@ -212,14 +212,14 @@ public class StackTests
         Assert.That(won.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
         Assert.That(won.MatchDeckRemaining, Is.EqualTo(1));
         Assert.That(won.PendingMatchTile, Is.Null);
-        Assert.That(Ids(won.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "covered" }));
+        Assert.That(See.Ids(won.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "covered" }));
         Assert.That(won.CellAt(0, 0), Is.EqualTo(Cards.Blue));
         Assert.That(ready.HasEnded, Is.False);
         Assert.That(ready.PendingMatchTile!.Id.Value, Is.EqualTo("top"));
 
         var tiles = won.TileCount;
         var rejected = RepresentativeDeck.Try(won, new Place(0, 0, 0));
-        AssertRejected(won, rejected, RejectionReason.GameOver);
+        Expect.Rejected(won, rejected, RejectionReason.GameOver);
         Assert.That(won.TileCount, Is.EqualTo(tiles));
         Assert.That(won.MatchDeckRemaining, Is.EqualTo(1));
     }
@@ -229,7 +229,7 @@ public class StackTests
     [TestCase("bounce")]
     public void PlaceOnAnOccupiedPosition_WithoutStack_IsRejected_AndTheGameStays(string symbol)
     {
-        var game = TwoSeatGame(
+        var game = RepresentativeDeck.TwoSeats(
             Cards.BlankTile("start"),
             Cards.Tile("plain", Cards.Symbol(symbol), Cards.Blank, Cards.Blank, Cards.Blank));
 
@@ -239,7 +239,7 @@ public class StackTests
         Assert.That(game.HasTileAt(0, 0), Is.True);
 
         var rejected = RepresentativeDeck.Try(game, new Place(0, 0, 0));
-        AssertRejected(game, rejected, RejectionReason.CellOccupied);
+        Expect.Rejected(game, rejected, RejectionReason.CellOccupied);
         Assert.That(game.CellAt(0, 0), Is.EqualTo(Cards.Blank));
         Assert.That(game.MatchDeckRemaining, Is.EqualTo(1));
         Assert.That(game.CurrentSeat, Is.EqualTo(Cards.Seat("a")));
@@ -248,13 +248,13 @@ public class StackTests
     [Test]
     public void StackTileAtAnEmptyPosition_PlacesBesideLikeAnyTile_AndCoversNothing()
     {
-        var game = TwoSeatGame(
+        var game = RepresentativeDeck.TwoSeats(
             Cards.BlankTile("start"),
             Cards.Tile("stacked", Stack, Cards.Blank, Cards.Blank, Cards.Blank),
             Cards.Tile("stacked-again", Stack, Cards.Blank, Cards.Blank, Cards.Blank));
 
         var apart = RepresentativeDeck.Try(game, new Place(3, 0, 0));
-        AssertRejected(game, apart, RejectionReason.DoesNotShareFullSide);
+        Expect.Rejected(game, apart, RejectionReason.DoesNotShareFullSide);
 
         var beside = RepresentativeDeck.Play(game, 1, 0);
         var next = See.Game(beside);
@@ -273,20 +273,20 @@ public class StackTests
     [TestCase(3)]
     public void QuarterTurnsClockwise_MoveTheTopCells(int quarterTurns)
     {
-        var game = TwoSeatGame(
+        var game = RepresentativeDeck.TwoSeats(
             Cards.BlankTile("start"),
             Cards.Tile("spun", Cards.Red, Cards.Blue, Cell.Color(OrdinaryCatalog.Green), Stack));
 
         var stacked = RepresentativeDeck.Play(game, 0, 0, quarterTurns);
         var placed = See.Game(stacked);
-        var expected = ExpectedClockwise(quarterTurns);
 
-        Assert.That(placed.CellAt(0, 0), Is.EqualTo(expected[0]));
-        Assert.That(placed.CellAt(1, 0), Is.EqualTo(expected[1]));
-        Assert.That(placed.CellAt(0, 1), Is.EqualTo(expected[2]));
-        Assert.That(placed.CellAt(1, 1), Is.EqualTo(expected[3]));
+        Expect.Tile(
+            placed,
+            0,
+            0,
+            Oriented.Clockwise([Cards.Red, Cards.Blue, Cell.Color(OrdinaryCatalog.Green), Stack], quarterTurns));
         Assert.That(placed.TileCount, Is.EqualTo(1));
-        Assert.That(Ids(placed.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "start" }));
+        Assert.That(See.Ids(placed.CoveredTileIds(0, 0)), Is.EqualTo(new[] { "start" }));
         Assert.That(placed.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
         var turn = (TilePlaced)stacked.Events[0];
         Assert.That(turn.QuarterTurnsClockwise, Is.EqualTo(quarterTurns));
@@ -298,7 +298,7 @@ public class StackTests
     [TestCase(-1)]
     public void QuarterTurnsOutsideZeroThroughThree_AreRejected(int quarterTurns)
     {
-        var game = TwoSeatGame(
+        var game = RepresentativeDeck.TwoSeats(
             Cards.BlankTile("start"),
             Cards.Tile("stacked", Stack, Cards.Blank, Cards.Blank, Cards.Blank));
 
@@ -316,7 +316,7 @@ public class StackTests
     [Test]
     public void EmptyMatchDeck_ThrowsUnresolvedRuling_AndLeavesTheGame()
     {
-        var game = TwoSeatGame(Cards.BlankTile("start"));
+        var game = RepresentativeDeck.TwoSeats(Cards.BlankTile("start"));
         var handA = See.Ids(game.Hand(Cards.Seat("a")));
         var handB = See.Ids(game.Hand(Cards.Seat("b")));
 
@@ -333,16 +333,6 @@ public class StackTests
         Assert.That(See.Ids(game.Hand(Cards.Seat("b"))), Is.EqualTo(handB));
         Assert.That(game.CoveredTileIds(0, 0), Is.Empty);
     }
-
-    // Y increases upward. One clockwise turn moves bottom-left red to top-left.
-    private static Cell[] ExpectedClockwise(int quarterTurns) => quarterTurns switch
-    {
-        0 => [Cards.Red, Cards.Blue, Cell.Color(OrdinaryCatalog.Green), Stack],
-        1 => [Cards.Blue, Stack, Cards.Red, Cell.Color(OrdinaryCatalog.Green)],
-        2 => [Stack, Cell.Color(OrdinaryCatalog.Green), Cards.Blue, Cards.Red],
-        3 => [Cell.Color(OrdinaryCatalog.Green), Cards.Red, Stack, Cards.Blue],
-        _ => throw new ArgumentOutOfRangeException(nameof(quarterTurns)),
-    };
 
     private static Game BeforeCoveringRedSquare(
         Tile stackTile,
@@ -368,23 +358,4 @@ public class StackTests
         return See.Game(RepresentativeDeck.Play(afterBridge, 0, 1));
     }
 
-    private static void AssertRejected(Game game, CommandResult result, RejectionReason reason)
-    {
-        Assert.That(result.IsAccepted, Is.False);
-        Assert.That(result.Rejection?.Reason, Is.EqualTo(reason));
-        Assert.That(result.Events, Is.Empty);
-        Assert.That(result.Game, Is.SameAs(game));
-    }
-
-    private static string[] Ids(IReadOnlyList<TileId> tiles) =>
-        tiles.Select(tile => tile.Value).ToArray();
-
-    private static Game TwoSeatGame(params Tile[] tiles)
-    {
-        return RepresentativeDeck.Start(
-            ["a", "b"],
-            "a",
-            [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2"), Cards.Purple("spare")],
-            tiles);
-    }
 }

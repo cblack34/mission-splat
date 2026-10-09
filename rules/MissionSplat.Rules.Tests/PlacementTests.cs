@@ -8,7 +8,7 @@ public class PlacementTests
     [TestCase(-1, -1)]
     public void CornerOnlyPlacement_IsRejected_AndTheBoardIsUnchanged(int tileX, int tileY)
     {
-        var game = TwoSeatGame(Cards.BlankTile("start"), Cards.BlankTile("drawn"));
+        var game = RepresentativeDeck.TwoSeats(Cards.BlankTile("start"), Cards.BlankTile("drawn"));
 
         var result = RepresentativeDeck.Try(game, new Place(tileX, tileY, 0));
 
@@ -24,7 +24,7 @@ public class PlacementTests
     [Test]
     public void WestFullSide_IsAccepted_AndCornersStayRejected()
     {
-        var game = TwoSeatGame(
+        var game = RepresentativeDeck.TwoSeats(
             Cards.BlankTile("start"),
             Cards.Tile(
                 "west",
@@ -58,7 +58,7 @@ public class PlacementTests
     [Test]
     public void OccupiedCell_RejectsATileWithoutStack_AndAStackTileMayStillUseAFullSide()
     {
-        var game = TwoSeatGame(
+        var game = RepresentativeDeck.TwoSeats(
             Cards.BlankTile("start"),
             Cards.Tile("plain", Cell.Color(OrdinaryCatalog.Green), Cards.Blank, Cards.Blank, Cards.Blank),
             Cards.Tile("stacked", Cell.Symbol(OrdinaryCatalog.Stack), Cards.Blank, Cards.Blank, Cards.Blank));
@@ -90,24 +90,20 @@ public class PlacementTests
     [TestCase(3)]
     public void QuarterTurnsClockwise_MoveCellsAroundTheTile(int quarterTurns)
     {
-        var game = TwoSeatGame(
+        var game = RepresentativeDeck.TwoSeats(
             Cards.BlankTile("start"),
-            Cards.Tile("spun", Cards.Red, Cards.Blue, Cell.Color(OrdinaryCatalog.Green), Cell.Color(OrdinaryCatalog.Purple)));
+            Cards.Cross("spun"));
 
         var placed = See.Game(RepresentativeDeck.Play(game, 1, 0, quarterTurns));
-        var expected = ExpectedClockwise(quarterTurns);
 
-        Assert.That(placed.CellAt(2, 0), Is.EqualTo(expected[0]));
-        Assert.That(placed.CellAt(3, 0), Is.EqualTo(expected[1]));
-        Assert.That(placed.CellAt(2, 1), Is.EqualTo(expected[2]));
-        Assert.That(placed.CellAt(3, 1), Is.EqualTo(expected[3]));
+        Expect.Tile(placed, 1, 0, Oriented.Cross(quarterTurns));
     }
 
     [TestCase(4)]
     [TestCase(-1)]
     public void QuarterTurnsOutsideZeroThroughThree_AreRejected(int quarterTurns)
     {
-        var game = TwoSeatGame(Cards.BlankTile("start"), Cards.BlankTile("drawn"));
+        var game = RepresentativeDeck.TwoSeats(Cards.BlankTile("start"), Cards.BlankTile("drawn"));
 
         CommandResult? result = null;
         Assert.That(() => { result = RepresentativeDeck.Try(game, new Place(1, 0, quarterTurns)); }, Throws.Nothing);
@@ -121,7 +117,7 @@ public class PlacementTests
     [Test]
     public void ApplyFromANonCurrentSeat_IsRejected_AndTheMatchIsUnchanged()
     {
-        var game = TwoSeatGame(Cards.BlankTile("start"), Cards.BlankTile("drawn"));
+        var game = RepresentativeDeck.TwoSeats(Cards.BlankTile("start"), Cards.BlankTile("drawn"));
 
         foreach (GameAction action in new GameAction[] { new Place(1, 0, 0), new UseRotate(0, 0, 1), new UseBounce(0, 0) })
         {
@@ -142,7 +138,7 @@ public class PlacementTests
     [Test]
     public void ApplyWithoutAnAction_Throws_AndLeavesTheGame()
     {
-        var game = TwoSeatGame(Cards.BlankTile("start"), Cards.BlankTile("drawn"));
+        var game = RepresentativeDeck.TwoSeats(Cards.BlankTile("start"), Cards.BlankTile("drawn"));
 
         Assert.That(() => game.Apply(Cards.Seat("a"), null!), Throws.ArgumentNullException);
         Assert.That(game.TileCount, Is.EqualTo(1));
@@ -152,7 +148,7 @@ public class PlacementTests
     [Test]
     public void AcceptedPlace_EmitsOneTilePlaced_WithNothingCovered()
     {
-        var game = TwoSeatGame(Cards.BlankTile("start"), Cards.BlankTile("drawn"));
+        var game = RepresentativeDeck.TwoSeats(Cards.BlankTile("start"), Cards.BlankTile("drawn"));
 
         var result = RepresentativeDeck.Play(game, 1, 0, 2);
 
@@ -163,7 +159,7 @@ public class PlacementTests
     [Test]
     public void EmptyMatchDeck_ThrowsUnresolvedRuling_AndLeavesTheGame()
     {
-        var game = TwoSeatGame(Cards.BlankTile("start"));
+        var game = RepresentativeDeck.TwoSeats(Cards.BlankTile("start"));
         var handA = See.Ids(game.Hand(Cards.Seat("a")));
         var handB = See.Ids(game.Hand(Cards.Seat("b")));
 
@@ -183,22 +179,4 @@ public class PlacementTests
         Assert.That(See.Ids(game.Hand(Cards.Seat("b"))), Is.EqualTo(handB));
     }
 
-    // Y increases upward, so one clockwise turn moves bottom-left (index 0) to top-left (index 2).
-    private static Cell[] ExpectedClockwise(int quarterTurns) => quarterTurns switch
-    {
-        0 => [Cards.Red, Cards.Blue, Cell.Color(OrdinaryCatalog.Green), Cell.Color(OrdinaryCatalog.Purple)],
-        1 => [Cards.Blue, Cell.Color(OrdinaryCatalog.Purple), Cards.Red, Cell.Color(OrdinaryCatalog.Green)],
-        2 => [Cell.Color(OrdinaryCatalog.Purple), Cell.Color(OrdinaryCatalog.Green), Cards.Blue, Cards.Red],
-        3 => [Cell.Color(OrdinaryCatalog.Green), Cards.Red, Cell.Color(OrdinaryCatalog.Purple), Cards.Blue],
-        _ => throw new ArgumentOutOfRangeException(nameof(quarterTurns)),
-    };
-
-    private static Game TwoSeatGame(params Tile[] tiles)
-    {
-        return RepresentativeDeck.Start(
-            ["a", "b"],
-            "a",
-            [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2"), Cards.Purple("spare")],
-            tiles);
-    }
 }

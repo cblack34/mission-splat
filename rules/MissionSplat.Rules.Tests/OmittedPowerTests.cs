@@ -18,7 +18,7 @@ public class OmittedPowerTests
         var refused = RepresentativeDeck.Try(omitted, new UseRotate(0, 0, 1));
         var listed = Open(null, tiles);
 
-        AssertRefused(omitted, refused, RejectionReason.NoUseRemaining);
+        Expect.Rejected(omitted, refused, RejectionReason.NoUseRemaining);
         Assert.That(RepresentativeDeck.Try(listed, new UseRotate(0, 0, 1)).IsAccepted, Is.True);
     }
 
@@ -31,7 +31,7 @@ public class OmittedPowerTests
         var refused = RepresentativeDeck.Try(omitted, new UseBounce(0, 0));
         var listed = Open(null, tiles);
 
-        AssertRefused(omitted, refused, RejectionReason.NoUseRemaining);
+        Expect.Rejected(omitted, refused, RejectionReason.NoUseRemaining);
         Assert.That(RepresentativeDeck.Try(listed, new UseBounce(0, 0)).IsAccepted, Is.True);
     }
 
@@ -45,7 +45,7 @@ public class OmittedPowerTests
         var listed = Open(null, tiles);
         var covered = RepresentativeDeck.Play(listed, 0, 0);
 
-        AssertRefused(omitted, refused, RejectionReason.CellOccupied);
+        Expect.Rejected(omitted, refused, RejectionReason.CellOccupied);
         Assert.That(((TilePlaced)covered.Events[0]).Covered, Is.EqualTo(new TileId("start")));
         Assert.That(RepresentativeDeck.Try(omitted, new Place(1, 0, 0)).IsAccepted, Is.True, "it still places beside");
     }
@@ -88,11 +88,4 @@ public class OmittedPowerTests
     private static SymbolId[] Without(SymbolId omitted) =>
         OrdinaryCatalog.NonScoringSymbols.Where(symbol => !symbol.Equals(omitted)).ToArray();
 
-    private static void AssertRefused(Game game, CommandResult result, RejectionReason reason)
-    {
-        Assert.That(result.IsAccepted, Is.False);
-        Assert.That(result.Rejection?.Reason, Is.EqualTo(reason));
-        Assert.That(result.Events, Is.Empty);
-        Assert.That(result.Game, Is.SameAs(game));
-    }
 }

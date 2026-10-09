@@ -18,7 +18,7 @@ public class BounceTests
         var side = Cards.BlankTile("side");
         var next1 = Cards.BlankTile("next1");
         var next2 = Cards.BlankTile("next2");
-        var game = TwoSeatGame(Cards.BlankTile("start"), side, OneBounce("drawn"), next1, next2);
+        var game = RepresentativeDeck.TwoSeats(Cards.BlankTile("start"), side, OneBounce("drawn"), next1, next2);
         var afterSide = See.Game(RepresentativeDeck.Play(game, 1, 0));
         Assert.That(afterSide.MatchDeckRemaining, Is.EqualTo(3));
 
@@ -49,7 +49,7 @@ public class BounceTests
         var drawn = Cards.Tile("drawn", Bounce, Bounce, Cards.Red, Cards.Blue);
         var t1 = Cards.BlankTile("t1");
         var t2 = Cards.BlankTile("t2");
-        var game = TwoSeatGame(Cross("start"), t1, t2, drawn);
+        var game = RepresentativeDeck.TwoSeats(Cards.Cross("start"), t1, t2, drawn);
         var afterT1 = See.Game(RepresentativeDeck.Play(game, 1, 0));
         var afterT2 = See.Game(RepresentativeDeck.Play(afterT1, -1, 0));
 
@@ -57,7 +57,7 @@ public class BounceTests
         var afterSecond = See.Game(RepresentativeDeck.Bounce(afterFirst, -1, 0));
         var third = RepresentativeDeck.Try(afterSecond, new UseBounce(0, 0));
 
-        AssertRejected(afterSecond, third, RejectionReason.NoUseRemaining);
+        Expect.Rejected(afterSecond, third, RejectionReason.NoUseRemaining);
         Assert.That(afterSecond.HasTileAt(1, 0), Is.False);
         Assert.That(afterSecond.HasTileAt(-1, 0), Is.False);
         Assert.That(afterSecond.HasTileAt(0, 0), Is.True);
@@ -75,13 +75,13 @@ public class BounceTests
     [Test]
     public void BounceSymbolAlreadyOnTheBoard_GrantsNothing()
     {
-        var plain = TwoSeatGame(
+        var plain = RepresentativeDeck.TwoSeats(
             Cards.Tile("start", Bounce, Cards.Red, Cards.Blue, Cards.Blank),
             Cards.BlankTile("drawn"));
 
         var blocked = RepresentativeDeck.Try(plain, new UseBounce(0, 0));
 
-        AssertRejected(plain, blocked, RejectionReason.NoUseRemaining);
+        Expect.Rejected(plain, blocked, RejectionReason.NoUseRemaining);
         Assert.That(plain.CellAt(0, 0), Is.EqualTo(Bounce));
         Assert.That(plain.TileCount, Is.EqualTo(1));
         Assert.That(plain.MatchDeckRemaining, Is.EqualTo(1));
@@ -90,13 +90,13 @@ public class BounceTests
     [Test]
     public void EmptyTarget_IsRejected_AndTheDrawnTileIsNeverATarget()
     {
-        var game = TwoSeatGame(Cross("start"), OneBounce("drawn"));
+        var game = RepresentativeDeck.TwoSeats(Cards.Cross("start"), OneBounce("drawn"));
 
         foreach (var (x, y) in new[] { (3, 3), (1, 0) })
         {
             var rejected = RepresentativeDeck.Try(game, new UseBounce(x, y));
 
-            AssertRejected(game, rejected, RejectionReason.NoTileToBounce);
+            Expect.Rejected(game, rejected, RejectionReason.NoTileToBounce);
         }
 
         Assert.That(game.TileCount, Is.EqualTo(1));
@@ -107,13 +107,13 @@ public class BounceTests
     public void ASecondBounceOfAnAlreadyEmptiedPosition_IsRejected_AndTheFirstStaysApplied()
     {
         var drawn = Cards.Tile("drawn", Bounce, Bounce, Cards.Red, Cards.Blue);
-        var game = TwoSeatGame(Cross("start"), Cards.BlankTile("target"), drawn);
+        var game = RepresentativeDeck.TwoSeats(Cards.Cross("start"), Cards.BlankTile("target"), drawn);
         var afterTarget = See.Game(RepresentativeDeck.Play(game, 1, 0));
         var afterFirst = See.Game(RepresentativeDeck.Bounce(afterTarget, 1, 0));
 
         var rejected = RepresentativeDeck.Try(afterFirst, new UseBounce(1, 0));
 
-        AssertRejected(afterFirst, rejected, RejectionReason.NoTileToBounce);
+        Expect.Rejected(afterFirst, rejected, RejectionReason.NoTileToBounce);
         Assert.That(afterFirst.HasTileAt(1, 0), Is.False);
         Assert.That(afterFirst.TileCount, Is.EqualTo(1));
         Assert.That(RepresentativeDeck.Bounce(afterFirst, 0, 0).Events, Has.Count.EqualTo(1), "the second cell is still unspent");
@@ -122,7 +122,7 @@ public class BounceTests
     [Test]
     public void StackedPosition_TwoBounces_PeelTwoLayers_RestoringTheCoverTimeCells()
     {
-        var mid = Cross("mid");
+        var mid = Cards.Cross("mid");
         var lid = OneStack("lid");
         var bounce2 = OneBounce("bounce2");
         var game = RepresentativeDeck.Start(
@@ -130,7 +130,7 @@ public class BounceTests
             "a",
             [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2"), Cards.Purple("spare")],
             [
-                Cross("start"),
+                Cards.Cross("start"),
                 mid,
                 OneRotate("turner"),
                 lid,
@@ -139,16 +139,16 @@ public class BounceTests
             ]);
 
         var afterMid = See.Game(RepresentativeDeck.Play(game, 1, 0));
-        AssertTile(afterMid, 1, 0, ExpectedClockwise(0));
+        Expect.Tile(afterMid, 1, 0, Oriented.Cross(0));
 
         var afterTurn = See.Game(RepresentativeDeck.Rotate(afterMid, 1, 0));
-        AssertTile(afterTurn, 1, 0, ExpectedClockwise(1));
+        Expect.Tile(afterTurn, 1, 0, Oriented.Cross(1));
         var afterTurner = See.Game(RepresentativeDeck.Play(afterTurn, 2, 0));
 
         var stackResult = RepresentativeDeck.Play(afterTurner, 1, 0);
         var afterLid = See.Game(stackResult);
         Assert.That(((TilePlaced)stackResult.Events[0]).Covered, Is.EqualTo(new TileId("mid")));
-        Assert.That(Ids(afterLid.CoveredTileIds(1, 0)), Is.EqualTo(new[] { "mid" }));
+        Assert.That(See.Ids(afterLid.CoveredTileIds(1, 0)), Is.EqualTo(new[] { "mid" }));
         Assert.That(afterLid.TileCount, Is.EqualTo(3));
 
         // The first bounce peels the stack's top and reveals "mid" with the cells it had when covered (already
@@ -158,7 +158,7 @@ public class BounceTests
         Assert.That(
             firstBounce.Events,
             Is.EqualTo(new[] { new TileBounced(Cards.Seat("b"), 1, 0, new TileId("lid"), new TileId("mid")) }));
-        AssertTile(afterFirstBounce, 1, 0, ExpectedClockwise(1));
+        Expect.Tile(afterFirstBounce, 1, 0, Oriented.Cross(1));
         Assert.That(afterFirstBounce.CoveredTileIds(1, 0), Is.Empty);
         Assert.That(afterFirstBounce.TileCount, Is.EqualTo(3), "a stacked bounce does not change the tile count");
 
@@ -188,7 +188,7 @@ public class BounceTests
             "a",
             [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2"), Cards.Purple("spare")],
             [
-                Cross("start"),
+                Cards.Cross("start"),
                 Cards.BlankTile("mid"),
                 OneStack("lid"),
                 OneBounce("bounce1"),
@@ -211,7 +211,7 @@ public class BounceTests
     [Test]
     public void ABouncedPosition_IsEmpty_SoThePlacementMayTakeIt()
     {
-        var game = TwoSeatGame(Cards.BlankTile("start"), Cards.BlankTile("side"), OneBounce("drawn"));
+        var game = RepresentativeDeck.TwoSeats(Cards.BlankTile("start"), Cards.BlankTile("side"), OneBounce("drawn"));
         var afterSide = See.Game(RepresentativeDeck.Play(game, 1, 0));
 
         var afterBounce = See.Game(RepresentativeDeck.Bounce(afterSide, 1, 0));
@@ -225,8 +225,8 @@ public class BounceTests
     [Test]
     public void BounceTheOnlyTile_EmptiesTheBoard_AndThePlacementIsLegalOnlyAtTheOrigin()
     {
-        var start = Cross("start");
-        var game = TwoSeatGame(
+        var start = Cards.Cross("start");
+        var game = RepresentativeDeck.TwoSeats(
             start,
             Cards.Tile("drawn", Bounce, Bounce, Cards.Blank, Cards.Blank),
             Cards.BlankTile("next"));
@@ -240,12 +240,12 @@ public class BounceTests
         Assert.That(empty.CellAt(0, 0), Is.Null);
         Assert.That(empty.PendingMatchTile!.Id.Value, Is.EqualTo("drawn"));
         Assert.That(empty.CurrentSeat, Is.EqualTo(Cards.Seat("a")));
-        AssertRejected(empty, RepresentativeDeck.Try(empty, new UseBounce(0, 0)), RejectionReason.NoTileToBounce);
-        AssertRejected(empty, RepresentativeDeck.Try(empty, new UseRotate(0, 0, 1)), RejectionReason.NoUseRemaining);
+        Expect.Rejected(empty, RepresentativeDeck.Try(empty, new UseBounce(0, 0)), RejectionReason.NoTileToBounce);
+        Expect.Rejected(empty, RepresentativeDeck.Try(empty, new UseRotate(0, 0, 1)), RejectionReason.NoUseRemaining);
 
         foreach (var (x, y) in new[] { (1, 0), (0, 1), (-1, 0), (1, 1) })
         {
-            AssertRejected(empty, RepresentativeDeck.Try(empty, new Place(x, y, 0)), RejectionReason.NotAtOrigin);
+            Expect.Rejected(empty, RepresentativeDeck.Try(empty, new Place(x, y, 0)), RejectionReason.NotAtOrigin);
         }
 
         var placed = RepresentativeDeck.Play(empty, 0, 0, 2);
@@ -261,7 +261,7 @@ public class BounceTests
     [Test]
     public void EmptyMatchDeck_ThrowsUnresolvedRuling_AndLeavesTheGame()
     {
-        var game = TwoSeatGame(Cards.BlankTile("start"));
+        var game = RepresentativeDeck.TwoSeats(Cards.BlankTile("start"));
         var handA = See.Ids(game.Hand(Cards.Seat("a")));
         var handB = See.Ids(game.Hand(Cards.Seat("b")));
 
@@ -360,49 +360,10 @@ public class BounceTests
         Assert.That(next.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
     }
 
-    // Y increases upward. One clockwise turn moves bottom-left red to top-left.
-    private static Cell[] ExpectedClockwise(int quarterTurns) => quarterTurns switch
-    {
-        0 => [Cards.Red, Cards.Blue, Green, Purple],
-        1 => [Cards.Blue, Purple, Cards.Red, Green],
-        2 => [Purple, Green, Cards.Blue, Cards.Red],
-        3 => [Green, Cards.Red, Purple, Cards.Blue],
-        _ => throw new ArgumentOutOfRangeException(nameof(quarterTurns)),
-    };
-
-    private static void AssertTile(Game game, int tileX, int tileY, Cell[] cells)
-    {
-        Assert.That(game.CellAt(tileX * 2, tileY * 2), Is.EqualTo(cells[0]));
-        Assert.That(game.CellAt((tileX * 2) + 1, tileY * 2), Is.EqualTo(cells[1]));
-        Assert.That(game.CellAt(tileX * 2, (tileY * 2) + 1), Is.EqualTo(cells[2]));
-        Assert.That(game.CellAt((tileX * 2) + 1, (tileY * 2) + 1), Is.EqualTo(cells[3]));
-    }
-
-    private static void AssertRejected(Game game, CommandResult result, RejectionReason reason)
-    {
-        Assert.That(result.IsAccepted, Is.False);
-        Assert.That(result.Rejection?.Reason, Is.EqualTo(reason));
-        Assert.That(result.Events, Is.Empty);
-        Assert.That(result.Game, Is.SameAs(game));
-    }
-
-    private static string[] Ids(IReadOnlyList<TileId> tiles) =>
-        tiles.Select(tile => tile.Value).ToArray();
-
-    private static Tile Cross(string id) => Cards.Tile(id, Cards.Red, Cards.Blue, Green, Purple);
-
     private static Tile OneBounce(string id) => Cards.Tile(id, Bounce, Cards.Blank, Cards.Blank, Cards.Blank);
 
     private static Tile OneRotate(string id) => Cards.Tile(id, Rotate, Cards.Blank, Cards.Blank, Cards.Blank);
 
     private static Tile OneStack(string id) => Cards.Tile(id, Stack, Cards.Blank, Cards.Blank, Cards.Blank);
 
-    private static Game TwoSeatGame(params Tile[] tiles)
-    {
-        return RepresentativeDeck.Start(
-            ["a", "b"],
-            "a",
-            [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2"), Cards.Purple("spare")],
-            tiles);
-    }
 }
