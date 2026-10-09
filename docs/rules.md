@@ -9,7 +9,7 @@ Names below are original. They describe the same structure as the photographed i
 - A **match tile** is a square 2×2 of cells. A cell is a scoring color, a non-scoring symbol, or a wildcard.
 - A **scoring color** is an id in the color catalog passed at setup. The ordinary catalog is red, blue, green, and purple. A pattern check compares the mission's color id to the cell. It does not special-case those four names, so another color passed at setup matches the same way.
 - A **non-scoring symbol** does not complete a pattern. The ordinary symbols are blank, rotate, stack, and bounce. Blank has no power. Rotate, stack, and bounce are the power symbols, drawn gray. Gray is not a scoring color. Another symbol passed at setup is the same kind of data and also does not score.
-- A **wildcard** is a quartered cell. It is not gray. It is always wild. No command names a color for it, and nothing stores a chosen color. Each mission check counts the cell as that mission's color, so one cell can count as red for one mission and blue for another. A wildcard on the starting tile stays wild.
+- A **wildcard** is a quartered cell. It is not gray. It is always wild. No action names a color for it, and nothing stores a chosen color. Each mission check counts the cell as that mission's color, so one cell can count as red for one mission and blue for another. A wildcard on the starting tile stays wild.
 - A **mission card** is a secret objective: four in a row, four in a square, or four in an L, in one scoring color. The patterns in play are the set passed at setup. The ordinary set is the row, the square, and the L. A shape that was not passed in does not claim.
 - A **claim** is a mission card laid face up in front of the seat that completed it. The claim row is not part of the board.
 
@@ -66,7 +66,7 @@ On those claims, as one resolution:
 2. Do not claim a replacement drawn during this resolution, even if the board already shows its pattern.
 3. The seat then ends the turn. One resolution passes the turn once.
 
-The ordinary win count is 4. Setup can require a different positive count. The first seat whose claim row reaches that count wins. If one placement's claims cross the count together, every claim from that placement still counts, and the win is emitted after them. The winning placement is not rejected. A later command is rejected. The claim row is the score. It is not scanned as board cells.
+The ordinary win count is 4. Setup can require a different positive count. The first seat whose claim row reaches that count wins. If one placement's claims cross the count together, every claim from that placement still counts, and the win is emitted after them. The winning placement is not rejected. A later action is rejected. The claim row is the score. It is not scanned as board cells.
 
 ## Powers
 
