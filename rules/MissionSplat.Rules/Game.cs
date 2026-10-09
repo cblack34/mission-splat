@@ -111,7 +111,7 @@ public sealed class Game
     // Read-only and total: no drawn tile, an ended game, or quarter-turns outside 0..3 yield nothing, never an exception.
     public IReadOnlyList<LegalPlacement> LegalPlacements(int quarterTurnsClockwise)
     {
-        if (PendingMatchTile is not { } tile || quarterTurnsClockwise is < 0 or > 3)
+        if (PendingMatchTile is not { } tile || !IsOrientation(quarterTurnsClockwise))
         {
             return [];
         }
@@ -130,7 +130,7 @@ public sealed class Game
 
     public IReadOnlyList<BoardPosition> LegalTargets(SymbolId power)
     {
-        if (PendingMatchTile is not { } tile || !OrdinaryCatalog.IsUsePower(power) || Remaining(tile, power, Spent(power)) == 0)
+        if (PendingMatchTile is not { } tile || !OrdinaryCatalog.IsUsePower(power))
         {
             return [];
         }
@@ -138,7 +138,7 @@ public sealed class Game
         var targets = new List<BoardPosition>();
         foreach (var coord in _grid.TilePositions)
         {
-            if (TargetRefusal(power, coord.X, coord.Y) is null)
+            if (UseRefusal(tile, power, coord.X, coord.Y) is null)
             {
                 targets.Add(new BoardPosition(coord.X, coord.Y));
             }
@@ -271,13 +271,7 @@ public sealed class Game
             return Reject(RejectionReason.InvalidRotateQuarterTurns, "A rotate use is 1, 2, or 3 quarter-turns.");
         }
 
-        var tile = DrawnTile();
-        if (Remaining(tile, OrdinaryCatalog.Rotate, _spent.Rotates) == 0)
-        {
-            return Reject(RejectionReason.NoUseRemaining, "The drawn tile has no unused rotate cell.");
-        }
-
-        var refusal = TargetRefusal(OrdinaryCatalog.Rotate, rotate.TileX, rotate.TileY);
+        var refusal = UseRefusal(DrawnTile(), OrdinaryCatalog.Rotate, rotate.TileX, rotate.TileY);
         if (refusal is not null)
         {
             return CommandResult.Reject(this, refusal);
@@ -292,21 +286,13 @@ public sealed class Game
 
     private CommandResult ApplyBounce(UseBounce bounce)
     {
-        var tile = DrawnTile();
-        if (Remaining(tile, OrdinaryCatalog.Bounce, _spent.Bounces) == 0)
-        {
-            return Reject(RejectionReason.NoUseRemaining, "The drawn tile has no unused bounce cell.");
-        }
-
-        var refusal = TargetRefusal(OrdinaryCatalog.Bounce, bounce.TileX, bounce.TileY);
+        var refusal = UseRefusal(DrawnTile(), OrdinaryCatalog.Bounce, bounce.TileX, bounce.TileY);
         if (refusal is not null)
         {
             return CommandResult.Reject(this, refusal);
         }
 
-        var buried = _grid.CoveredTileIds(bounce.TileX, bounce.TileY);
-        TileId? revealed = buried.Count == 0 ? null : buried[buried.Count - 1];
-        var (grid, removed) = _grid.Bounce(bounce.TileX, bounce.TileY);
+        var (grid, removed, revealed) = _grid.Bounce(bounce.TileX, bounce.TileY);
 
         var matchDeck = new Tile[_matchDeck.Length + 1];
         Array.Copy(_matchDeck, matchDeck, _matchDeck.Length);
@@ -320,7 +306,7 @@ public sealed class Game
 
     private CommandResult ApplyPlace(Place place)
     {
-        if (place.QuarterTurnsClockwise is < 0 or > 3)
+        if (!IsOrientation(place.QuarterTurnsClockwise))
         {
             return Reject(RejectionReason.InvalidQuarterTurns, "Quarter-turns are 0, 1, 2, or 3.");
         }
@@ -337,9 +323,8 @@ public sealed class Game
         Grid grid;
         if (KindAt(place.TileX, place.TileY) == PlacementKind.OnTop)
         {
-            grid = _grid.Cover(place.TileX, place.TileY, tile, located);
-            var buried = grid.CoveredTileIds(place.TileX, place.TileY);
-            covered = buried[buried.Count - 1];
+            (grid, var buriedId) = _grid.Cover(place.TileX, place.TileY, tile, located);
+            covered = buriedId;
         }
         else
         {
@@ -374,6 +359,21 @@ public sealed class Game
                 "A tile has to share a full side with a tile already on the board.");
     }
 
+    // The single decision for a power use, shared by Apply and LegalTargets: a charge must remain, then the target must be legal.
+    private Rejection? UseRefusal(Tile tile, SymbolId power, int tileX, int tileY)
+    {
+        if (Remaining(tile, power, Spent(power)) == 0)
+        {
+            return new Rejection(
+                RejectionReason.NoUseRemaining,
+                power.Equals(OrdinaryCatalog.Rotate)
+                    ? "The drawn tile has no unused rotate cell."
+                    : "The drawn tile has no unused bounce cell.");
+        }
+
+        return TargetRefusal(power, tileX, tileY);
+    }
+
     // The single target decision for a use power, shared by Apply and LegalTargets so they cannot disagree.
     private Rejection? TargetRefusal(SymbolId power, int tileX, int tileY)
     {
@@ -389,6 +389,8 @@ public sealed class Game
             ? new Rejection(RejectionReason.TileSurrounded, "That tile is completely surrounded.")
             : null;
     }
+
+    private static bool IsOrientation(int quarterTurns) => quarterTurns is >= 0 and <= 3;
 
     private PlacementKind KindAt(int tileX, int tileY) =>
         _grid.HasTile(tileX, tileY) ? PlacementKind.OnTop : PlacementKind.Beside;
