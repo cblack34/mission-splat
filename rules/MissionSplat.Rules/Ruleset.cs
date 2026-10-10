@@ -13,6 +13,9 @@ internal sealed class Ruleset
         _patterns = patternsInPlay.ToArray();
     }
 
+    // The powers the setup lists, in setup order. An unlisted power is a blank, so it is absent here.
+    public IReadOnlyList<SymbolId> PowersInPlay => _symbols.Where(OrdinaryCatalog.IsPower).ToArray();
+
     // Distinct in-play powers only: an unlisted power reads as a blank, and two cells of one power are not mixed.
     public bool ShowsMixedPowers(Tile tile)
     {

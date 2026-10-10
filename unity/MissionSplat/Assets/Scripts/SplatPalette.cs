@@ -19,6 +19,7 @@ public static class SplatPalette
     public static readonly Color Gray = Hex("adb5bd");
     public static readonly Color BlankFill = Hex("f8f9fa");
     public static readonly Color Highlight = new Color(0.184f, 0.620f, 0.267f, 0.42f);
+    public static readonly Color StackHighlight = new Color(0.612f, 0.212f, 0.710f, 0.45f);
     public static readonly Color Overlay = new Color(0.11f, 0.20f, 0.28f, 0.82f);
 
     public static Color Of(ColorId color)

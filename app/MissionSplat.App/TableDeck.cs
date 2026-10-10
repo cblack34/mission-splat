@@ -1,15 +1,12 @@
-namespace MissionSplat.Player
-{
+namespace MissionSplat.App;
 
-using System;
-using System.Collections.Generic;
 using MissionSplat.Rules;
 
 public static class TableDeck
 {
     public const string Name = "table";
 
-    public static GameSetup Ordinary(IReadOnlyList<SeatId> seats, SeatId firstSeat, bool shuffle)
+    public static GameSetup Ordinary(IReadOnlyList<SeatId> seats, SeatId firstSeat, int? shuffleSeed)
     {
         if (seats is null)
         {
@@ -18,9 +15,9 @@ public static class TableDeck
 
         var missions = Missions();
         var tiles = Tiles();
-        if (shuffle)
+        if (shuffleSeed is int seed)
         {
-            var rng = new Random();
+            var rng = new Random(seed);
             Shuffle(missions, rng);
             Shuffle(tiles, rng);
         }
@@ -116,5 +113,4 @@ public static class TableDeck
             (items[i], items[j]) = (items[j], items[i]);
         }
     }
-}
 }

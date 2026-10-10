@@ -23,7 +23,7 @@ public sealed class TableView : MonoBehaviour
     private TableSetupView _setupView;
     private TableSnapshot _rendered;
 
-    public event Action<Placement> Tapped;
+    public event Action<int, int> Tapped;
     public event Action Confirmed;
     public event Action<int> QuarterTurnsSelected;
     public event Action<TableStart> Started;
@@ -97,7 +97,7 @@ public sealed class TableView : MonoBehaviour
         Ui.Stretch(_setup);
         _playView = new TablePlayView(_play);
         _setupView = new TableSetupView(_setup);
-        _playView.Tapped += placement => Tapped?.Invoke(placement);
+        _playView.Tapped += (tileX, tileY) => Tapped?.Invoke(tileX, tileY);
         _playView.Confirmed += () => Confirmed?.Invoke();
         _playView.QuarterTurnsSelected += turns => QuarterTurnsSelected?.Invoke(turns);
         _setupView.Started += draft => Started?.Invoke(draft);

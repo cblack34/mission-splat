@@ -1,8 +1,5 @@
-namespace MissionSplat.Player
-{
+namespace MissionSplat.App;
 
-using System;
-using System.Collections.Generic;
 using MissionSplat.Rules;
 
 public sealed class TableStart
@@ -80,5 +77,4 @@ public sealed class TableStart
 
         throw new ArgumentException("That seat is not at the table.", nameof(seat));
     }
-}
 }

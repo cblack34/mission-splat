@@ -2,6 +2,7 @@ namespace MissionSplat.Player
 {
 
 using System;
+using MissionSplat.App;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -49,7 +50,7 @@ internal sealed class TableSetupView
             var row = 0.58f - (i * 0.10f);
             var label = Ui.Label("Seat" + i, panel.transform, 20, SplatPalette.Ink, TextAnchor.MiddleLeft);
             Ui.Anchored(label.rectTransform, new Vector2(0.08f, row), new Vector2(0.28f, row + 0.09f), Vector2.zero, Vector2.zero);
-            label.text = "Seat " + (i + 1);
+            label.text = "Seat " + _draft.SeatAt(i).Value;
             var human = Ui.Button("Human" + i, panel.transform, "Human", _draft.IsAi(i) ? SplatPalette.Muted : SplatPalette.Blue);
             Ui.Anchored(human.GetComponent<RectTransform>(), new Vector2(0.30f, row), new Vector2(0.50f, row + 0.09f), Vector2.zero, Vector2.zero);
             human.onClick.AddListener(() => SetAi(index, false));

@@ -63,6 +63,9 @@ public sealed class Game
         }
     }
 
+    // The powers this game's setup lists, so a GUI can refuse a game it cannot present.
+    public IReadOnlyList<SymbolId> PowersInPlay => _ruleset.PowersInPlay;
+
     public static CommandResult Start(GameSetup setup)
     {
         if (setup is null)

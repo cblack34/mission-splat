@@ -11,13 +11,17 @@ public sealed class LocalSession : ISession
         var result = Game.Start(setup);
         if (!result.IsAccepted)
         {
-            // A rejected setup is not installed. Clearing an accepted session would make this rejection destructive, unlike Place.
+            // A rejected setup is not installed. Clearing an accepted session would make this rejection destructive, unlike Submit.
             return SessionResult.Reject(Required(result.Rejection));
         }
 
         _game = RequiredGame(result);
         return SessionResult.Accept(result.Events);
     }
+
+    public SeatId CurrentSeat => StartedGame().CurrentSeat;
+
+    public IReadOnlyList<SymbolId> PowersInPlay => StartedGame().PowersInPlay;
 
     public SeatView View(SeatId seat)
     {
@@ -37,19 +41,18 @@ public sealed class LocalSession : ISession
             Board(game),
             game.CurrentSeat,
             game.HasEnded,
-            game.PendingMatchTile);
+            game.PendingMatchTile,
+            RemainingUses(game));
     }
 
-    public SessionResult Place(SeatId seat, Placement placement)
+    public SessionResult Submit(SeatId seat, GameAction action)
     {
-        if (RejectionFor(seat) is SessionRejection blocked)
+        if (_game is null)
         {
-            return SessionResult.Reject(blocked);
+            return SessionResult.Reject(NotStarted());
         }
 
-        var result = StartedGame().Apply(
-            seat,
-            new Place(placement.TileX, placement.TileY, placement.QuarterTurnsClockwise));
+        var result = _game.Apply(seat, action);
         if (!result.IsAccepted)
         {
             return SessionResult.Reject(Required(result.Rejection));
@@ -59,19 +62,23 @@ public sealed class LocalSession : ISession
         return SessionResult.Accept(result.Events);
     }
 
-    public PlacementPreview Preview(SeatId seat, Placement placement)
+    public IReadOnlyList<LegalPlacement> LegalPlacements(SeatId seat, int quarterTurnsClockwise) =>
+        _game is { } game && seat.Equals(game.CurrentSeat) ? game.LegalPlacements(quarterTurnsClockwise) : [];
+
+    public IReadOnlyList<BoardPosition> LegalTargets(SeatId seat, SymbolId power) =>
+        _game is { } game && seat.Equals(game.CurrentSeat) ? game.LegalTargets(power) : [];
+
+    public ActionPreview Preview(SeatId seat, GameAction action)
     {
-        if (RejectionFor(seat) is SessionRejection blocked)
+        if (_game is null)
         {
-            return PlacementPreview.Reject(blocked);
+            return ActionPreview.Reject(NotStarted());
         }
 
-        var result = StartedGame().Apply(
-            seat,
-            new Place(placement.TileX, placement.TileY, placement.QuarterTurnsClockwise));
+        var result = _game.Apply(seat, action);
         if (!result.IsAccepted)
         {
-            return PlacementPreview.Reject(Required(result.Rejection));
+            return ActionPreview.Reject(Required(result.Rejection));
         }
 
         var claimed = new List<MissionId>();
@@ -80,32 +87,29 @@ public sealed class LocalSession : ISession
             claimed.Add(claim.Mission);
         }
 
-        return PlacementPreview.Accept(claimed);
+        return ActionPreview.Accept(claimed);
     }
 
-    private SessionRejection? RejectionFor(SeatId seat)
-    {
-        if (_game is null)
-        {
-            return new SessionRejection("The session has not started.", null);
-        }
-
-        if (!seat.Equals(_game.CurrentSeat))
-        {
-            return new SessionRejection("It is not that seat's turn.", null);
-        }
-
-        return null;
-    }
+    private static SessionRejection NotStarted() => new("The session has not started.", null);
 
     private Game StartedGame()
     {
-        if (_game is null)
+        return _game ?? throw new InvalidOperationException(NotStarted().Message);
+    }
+
+    // Charges are public table state: the drawn tile is shown to every seat. Stack is no use, so it never appears.
+    private static PowerCharge[] RemainingUses(Game game)
+    {
+        var charges = new List<PowerCharge>();
+        foreach (var power in game.PowersInPlay)
         {
-            throw new InvalidOperationException("The session has not started.");
+            if (power.Equals(OrdinaryCatalog.Rotate) || power.Equals(OrdinaryCatalog.Bounce))
+            {
+                charges.Add(new PowerCharge(power, game.RemainingUses(power)));
+            }
         }
 
-        return _game;
+        return charges.ToArray();
     }
 
     private BoardView Board(Game game)

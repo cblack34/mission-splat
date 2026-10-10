@@ -11,15 +11,17 @@ public sealed class SeatView
         BoardView board,
         SeatId currentSeat,
         bool hasEnded,
-        Tile? pendingMatchTile)
+        Tile? pendingMatchTile,
+        IReadOnlyList<PowerCharge> remainingUses)
     {
         Seat = seat;
-        UnclaimedMissions = Copy(unclaimedMissions, nameof(unclaimedMissions));
-        Claims = Copy(claims, nameof(claims));
+        UnclaimedMissions = Copied.Items(unclaimedMissions, nameof(unclaimedMissions));
+        Claims = Copied.Items(claims, nameof(claims));
         Board = board ?? throw new ArgumentNullException(nameof(board));
         CurrentSeat = currentSeat;
         HasEnded = hasEnded;
         PendingMatchTile = pendingMatchTile;
+        RemainingUses = Copied.List(remainingUses, nameof(remainingUses));
     }
 
     public SeatId Seat { get; }
@@ -36,22 +38,8 @@ public sealed class SeatView
 
     public Tile? PendingMatchTile { get; }
 
-    private static T[] Copy<T>(IReadOnlyList<T>? items, string name)
-        where T : class
-    {
-        if (items is null)
-        {
-            throw new ArgumentNullException(name);
-        }
-
-        var copy = new T[items.Count];
-        for (var i = 0; i < items.Count; i++)
-        {
-            copy[i] = items[i] ?? throw new ArgumentException("The list contains a null entry.", name);
-        }
-
-        return copy;
-    }
+    // One entry per use power the setup lists, in setup order; zero once the drawn tile's cells of it are spent.
+    public IReadOnlyList<PowerCharge> RemainingUses { get; }
 }
 
 public sealed class SeatClaims
@@ -59,59 +47,29 @@ public sealed class SeatClaims
     public SeatClaims(SeatId seat, IReadOnlyList<Mission> missions)
     {
         Seat = seat;
-        Missions = Copy(missions);
+        Missions = Copied.Items(missions, nameof(missions));
     }
 
     public SeatId Seat { get; }
 
     public IReadOnlyList<Mission> Missions { get; }
-
-    private static Mission[] Copy(IReadOnlyList<Mission>? missions)
-    {
-        if (missions is null)
-        {
-            throw new ArgumentNullException(nameof(missions));
-        }
-
-        var copy = new Mission[missions.Count];
-        for (var i = 0; i < missions.Count; i++)
-        {
-            copy[i] = missions[i] ?? throw new ArgumentException("The list contains a null entry.", nameof(missions));
-        }
-
-        return copy;
-    }
 }
 
 public sealed class BoardView
 {
     public BoardView(IReadOnlyList<OccupiedTile> tiles, IReadOnlyList<OccupiedCell> cells)
     {
-        Tiles = Copy(tiles, nameof(tiles));
-        Cells = Copy(cells, nameof(cells));
+        Tiles = Copied.List(tiles, nameof(tiles));
+        Cells = Copied.List(cells, nameof(cells));
     }
 
     public IReadOnlyList<OccupiedTile> Tiles { get; }
 
     public IReadOnlyList<OccupiedCell> Cells { get; }
-
-    private static T[] Copy<T>(IReadOnlyList<T>? items, string name)
-    {
-        if (items is null)
-        {
-            throw new ArgumentNullException(name);
-        }
-
-        var copy = new T[items.Count];
-        for (var i = 0; i < items.Count; i++)
-        {
-            copy[i] = items[i];
-        }
-
-        return copy;
-    }
 }
 
 public readonly record struct OccupiedTile(TileId Id, int TileX, int TileY);
 
 public readonly record struct OccupiedCell(int CellX, int CellY, Cell Value);
+
+public readonly record struct PowerCharge(SymbolId Power, int Remaining);

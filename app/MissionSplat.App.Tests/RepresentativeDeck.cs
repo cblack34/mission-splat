@@ -53,7 +53,7 @@ internal static class ClaimingTable
 
     private static readonly Cell[] SeatColors = [Cards.Red, Cards.Blue, Cards.Green, Cards.Purple];
 
-    private static readonly Placement[] AroundTheStart =
+    private static readonly Place[] AroundTheStart =
     [
         new(1, 0, 0),
         new(0, 1, 0),
@@ -61,7 +61,7 @@ internal static class ClaimingTable
         new(0, -1, 0),
     ];
 
-    public static Table Open(int seatCount)
+    public static Opened Open(int seatCount)
     {
         var names = Names.Take(seatCount).ToArray();
         var missions = new List<Mission>();
@@ -96,7 +96,7 @@ internal static class ClaimingTable
             players[i] = new ScriptedPlayer(names[i], AroundTheStart[i]);
         }
 
-        return new Table(session, players);
+        return new Opened(session, players);
     }
 
     private static ColorId ColorOf(string name) => name switch
@@ -108,33 +108,33 @@ internal static class ClaimingTable
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "The representative table has seats a through d."),
     };
 
-    internal sealed record Table(LocalSession Session, IPlayer[] Players);
+    internal sealed record Opened(LocalSession Session, IPlayer[] Players);
 }
 
 internal sealed class ScriptedPlayer : IPlayer
 {
-    private readonly Queue<Placement> _placements;
+    private readonly Queue<GameAction> _actions;
 
-    public ScriptedPlayer(string seat, params Placement[] placements)
+    public ScriptedPlayer(string seat, params GameAction[] actions)
     {
         Seat = new SeatId(seat);
-        _placements = new Queue<Placement>(placements);
+        _actions = new Queue<GameAction>(actions);
     }
 
     public SeatId Seat { get; }
 
-    public Placement ChoosePlacement(SeatView view)
+    public GameAction ChooseAction(SeatView view)
     {
         if (!view.Seat.Equals(Seat))
         {
             throw new ArgumentException("The view is for a different seat.", nameof(view));
         }
 
-        if (_placements.Count == 0)
+        if (_actions.Count == 0)
         {
-            throw new InvalidOperationException("The script has no placement left.");
+            throw new InvalidOperationException("The script has no action left.");
         }
 
-        return _placements.Dequeue();
+        return _actions.Dequeue();
     }
 }

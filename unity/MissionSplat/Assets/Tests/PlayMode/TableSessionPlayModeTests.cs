@@ -26,7 +26,6 @@ public class TableSessionPlayModeTests
     [Test]
     public void ScriptedHumanPlacement_ThenOneAiTurn_PlacesThroughLocalSession()
     {
-        Assert.That(TableDeck.Name, Is.EqualTo("table"));
         Assert.That(OrdinaryCatalog.ClaimsRequiredToWin, Is.EqualTo(4));
 
         _root = new GameObject("Table");
@@ -34,30 +33,82 @@ public class TableSessionPlayModeTests
         table.Begin(TableStart.HumanThenAi());
 
         Assert.That(table.IsStarted, Is.True);
-        Assert.That(table.View.CurrentSeat.Value, Is.EqualTo("1"));
-        Assert.That(table.View.Board.Tiles.Count, Is.EqualTo(1));
+        Assert.That(table.Snapshot.View.CurrentSeat.Value, Is.EqualTo("1"));
+        Assert.That(table.Snapshot.View.Board.Tiles.Count, Is.EqualTo(1));
         Assert.That(table.Snapshot.ConcealVisible, Is.True);
         Assert.That(table.Snapshot.SecretsVisible, Is.False);
-        Assert.That(table.Highlights, Is.Empty);
+        Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.ToConfirm));
+        Assert.That(table.Snapshot.LegalPlacements, Is.Empty);
 
         table.ConfirmIncomingSeat();
 
+        var placements = table.Snapshot.LegalPlacements;
         Assert.That(table.Snapshot.ConcealVisible, Is.False);
         Assert.That(table.Snapshot.SecretsVisible, Is.True);
-        Assert.That(table.View.UnclaimedMissions.Count, Is.EqualTo(2));
-        Assert.That(table.Highlights, Is.Not.Empty);
-        Assert.That(table.Highlights.Any(slot => slot.Equals(new Placement(1, 1, 0))), Is.False);
-        Assert.That(table.Highlights.Any(slot => slot.Equals(new Placement(1, 0, 0))), Is.True);
+        Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.ToAct));
+        Assert.That(table.Snapshot.View.UnclaimedMissions.Count, Is.EqualTo(2));
+        Assert.That(placements, Is.Not.Empty);
+        Assert.That(placements.Any(slot => slot.TileX == 1 && slot.TileY == 1), Is.False);
+        Assert.That(placements.Any(slot => slot.TileX == 1 && slot.TileY == 0), Is.True);
 
-        table.Tap(new Placement(1, 0, 0));
+        table.Tap(1, 0);
 
-        Assert.That(table.View.Board.Tiles.Count, Is.EqualTo(3));
-        Assert.That(table.View.CurrentSeat.Value, Is.EqualTo("1"));
-        Assert.That(table.View.HasEnded, Is.False);
-        Assert.That(table.View.Claims.Single(row => row.Seat.Value == "1").Missions.Count, Is.EqualTo(1));
-        Assert.That(table.View.UnclaimedMissions.Count, Is.EqualTo(2));
+        var view = table.Snapshot.View;
+        Assert.That(view.Board.Tiles.Count, Is.EqualTo(3));
+        Assert.That(view.CurrentSeat.Value, Is.EqualTo("1"));
+        Assert.That(view.HasEnded, Is.False);
+        Assert.That(view.Claims.Single(row => row.Seat.Value == "1").Missions.Count, Is.EqualTo(1));
+        Assert.That(view.UnclaimedMissions.Count, Is.EqualTo(2));
+        // The same human holds the device after an AI turn, so the hand stays visible.
+        Assert.That(table.Snapshot.ConcealVisible, Is.False);
+        Assert.That(table.Snapshot.SecretsVisible, Is.True);
+        Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.ToAct));
+    }
+
+    [Test]
+    public void StackTile_OffersAnOnTopPlacement_AndTappingItCoversWithoutAddingATile()
+    {
+        _root = new GameObject("Table");
+        var table = _root.AddComponent<TableSession>();
+        table.Begin(TableStart.PassAndPlayDraft(), StackSetup());
+        table.ConfirmIncomingSeat();
+
+        var before = table.Snapshot.View.Board;
+        var onTop = table.Snapshot.LegalPlacements.Where(slot => slot.Kind == PlacementKind.OnTop).ToArray();
+        Assert.That(onTop, Is.EqualTo(new[] { new LegalPlacement(0, 0, PlacementKind.OnTop) }));
+        Assert.That(table.Snapshot.LegalPlacements.Any(slot => slot.Kind == PlacementKind.Beside), Is.True);
+        Assert.That(before.Tiles.Count, Is.EqualTo(1));
+        Assert.That(before.Cells.All(cell => cell.Value.Equals(Cell.Symbol(OrdinaryCatalog.Blank))), Is.True);
+
+        FindButton("Highlight0_0").onClick.Invoke();
+
+        var after = table.Snapshot.View.Board;
+        Assert.That(after.Tiles.Count, Is.EqualTo(1));
+        Assert.That(after.Tiles[0].Id.Value, Is.EqualTo("lid"));
+        Assert.That(after.Cells.Any(cell => cell.Value.Equals(Cell.Color(OrdinaryCatalog.Red))), Is.True);
+        Assert.That(table.Snapshot.View.CurrentSeat.Value, Is.EqualTo("2"));
         Assert.That(table.Snapshot.ConcealVisible, Is.True);
-        Assert.That(table.Snapshot.SecretsVisible, Is.False);
+    }
+
+    [Test]
+    public void BouncingTheLastTile_StillRendersTheOriginPlacement()
+    {
+        _root = new GameObject("Table");
+        var table = _root.AddComponent<TableSession>();
+        table.Begin(TableStart.PassAndPlayDraft(), BounceSetup());
+        table.ConfirmIncomingSeat();
+
+        table.Submit(new UseBounce(0, 0));
+
+        Assert.That(table.Snapshot.View.Board.Tiles.Count, Is.EqualTo(0));
+        Assert.That(table.Snapshot.LegalPlacements, Is.EqualTo(new[] { new LegalPlacement(0, 0, PlacementKind.Beside) }));
+        var origin = FindButton("Highlight0_0");
+        Assert.That(origin, Is.Not.Null);
+        Assert.That(origin.transform.parent.name, Is.EqualTo("Lattice"));
+
+        origin.onClick.Invoke();
+
+        Assert.That(table.Snapshot.View.Board.Tiles.Count, Is.EqualTo(1));
     }
 
     [Test]
@@ -139,6 +190,62 @@ public class TableSessionPlayModeTests
         Assert.That(module.leftClick.action.bindings.Any(binding => binding.path.Contains("Touchscreen")), Is.True);
     }
 
+    [Test]
+    public void AHumanTurnWithAMixedPowerTile_ShowsTheRulesMessage_AndOffersNothingToTap()
+    {
+        _root = new GameObject("Table");
+        var table = _root.AddComponent<TableSession>();
+        table.Begin(TableStart.PassAndPlayDraft(), MixedSetup());
+        table.ConfirmIncomingSeat();
+
+        var snapshot = table.Snapshot;
+        Assert.That(snapshot.Status.Kind, Is.EqualTo(TableStatusKind.Stopped));
+        Assert.That(snapshot.Status.Message, Does.Contain("open ruling"));
+        Assert.That(FindText("Status").text, Is.EqualTo(snapshot.Status.Message));
+        var lattice = FindRect("Lattice");
+        Assert.That(lattice, Is.Not.Null);
+        Assert.That(lattice.GetComponentsInChildren<Button>(true).Any(button => button.name.StartsWith("Highlight")), Is.False);
+        foreach (var turn in new[] { "Turn0", "Turn1", "Turn2", "Turn3" })
+        {
+            var button = FindButton(turn);
+            Assert.That(button, Is.Not.Null, turn);
+            Assert.That(button.interactable, Is.False, turn);
+        }
+    }
+
+    private static GameSetup StackSetup() => SetupWith(
+        new Tile(new TileId("lid"), Cell.Symbol(OrdinaryCatalog.Stack), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Blue), Cell.Symbol(OrdinaryCatalog.Blank)));
+
+    private static GameSetup BounceSetup() => SetupWith(
+        new Tile(new TileId("lid"), Cell.Symbol(OrdinaryCatalog.Bounce), Cell.Symbol(OrdinaryCatalog.Blank), Cell.Symbol(OrdinaryCatalog.Blank), Cell.Symbol(OrdinaryCatalog.Blank)));
+
+    private static GameSetup MixedSetup() => SetupWith(
+        new Tile(new TileId("mixed"), Cell.Symbol(OrdinaryCatalog.Rotate), Cell.Symbol(OrdinaryCatalog.Bounce), Cell.Symbol(OrdinaryCatalog.Blank), Cell.Symbol(OrdinaryCatalog.Blank)));
+
+    private static GameSetup SetupWith(Tile drawn)
+    {
+        var blank = Cell.Symbol(OrdinaryCatalog.Blank);
+        var missions = new[] { "a1", "a2", "b1", "b2", "spare" }
+            .Select(id => new Mission(new MissionId(id), MissionPattern.Row, OrdinaryCatalog.Purple))
+            .ToArray();
+        var tiles = new[]
+        {
+            new Tile(new TileId("start"), blank, blank, blank, blank),
+            drawn,
+            new Tile(new TileId("pad"), blank, blank, blank, blank),
+        };
+        var seats = TableStart.PassAndPlayDraft().SeatsInTurnOrder();
+        return new GameSetup(
+            seats,
+            seats[0],
+            OrdinaryCatalog.Colors,
+            OrdinaryCatalog.NonScoringSymbols,
+            OrdinaryCatalog.Patterns,
+            OrdinaryCatalog.ClaimsRequiredToWin,
+            missions,
+            tiles);
+    }
+
     private RectTransform FindRect(string name)
     {
         foreach (var rect in _root.GetComponentsInChildren<RectTransform>(true))
@@ -146,6 +253,19 @@ public class TableSessionPlayModeTests
             if (rect.name == name)
             {
                 return rect;
+            }
+        }
+
+        return null;
+    }
+
+    private Button FindButton(string name)
+    {
+        foreach (var button in _root.GetComponentsInChildren<Button>(true))
+        {
+            if (button.name == name)
+            {
+                return button;
             }
         }
 

@@ -36,6 +36,8 @@ The only types that cross the Unity boundary are actions, events, seat-scoped vi
 
 The action set is closed per ruleset and typed, never a string: use rotate, use bounce, place. Adding one is a change the compiler can point at. The GUI never decides legality: it highlights what the session reports and submits what was tapped; the rules engine accepts or rejects. The powers in play are setup data. A rotate, stack, or bounce symbol the setup does not list is a blank. The match can list the powers in play so a GUI can refuse to start a game it cannot present. Adding a power touches a closed set of places: a symbol in the catalog, typed legality and effect in the rules engine, and a GUI target shape only if the power needs one the GUI does not already have. A power adds its own action type and event only when it is used independently of the placement, as rotate and bounce are before it. A power that only changes where the drawn tile may go, as stack does, rides on `Place` and `TilePlaced` and adds neither.
 
+The player must not take the rules package from a NuGet feed. The rules and app build copy the DLLs into the local UPM package. Those DLLs are build output and are not committed. A later server uses a project reference, not the UPM package.
+
 ## Illustrative sketch
 
 Guidance, not mandate. Names and shapes are the agreed contract at the level a reviewer checks; the code chooses its own identifiers.
@@ -100,15 +102,6 @@ ADDING A POWER
   GUI:    only if it needs a target shape the GUI doesn't already have
   AI:     optional — the AI may keep declining powers
 ```
-
-## Shipped state
-
-Recorded 2026-10-09. The code lags this description in these places; each is removed by a slice under [`implementation/slices/`](implementation/slices/), and this section goes with it.
-
-- The turn driver is `TableSession`, a `MonoBehaviour` in the Unity player. The deck content is `TableDeck` in the Unity player. `HumanPlayer` implements `IPlayer` by buffering a tap.
-- `ISession` still exposes `Place` and `Preview` for one placement rather than submitting an action and forwarding the legal-move queries, and `SeatView` carries no turn phase or remaining charges. Rotate and bounce are therefore not reachable through the session yet.
-
-The player must not take the rules package from a NuGet feed. The rules and app build copy the DLLs into the local UPM package. Those DLLs are build output and are not committed. A later server uses a project reference, not the UPM package.
 
 ## Rejected alternatives
 

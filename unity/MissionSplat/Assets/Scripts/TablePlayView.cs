@@ -18,7 +18,7 @@ internal sealed class TablePlayView
     private readonly RectTransform _conceal;
     private readonly Text _concealLabel;
 
-    public event Action<Placement> Tapped;
+    public event Action<int, int> Tapped;
     public event Action Confirmed;
     public event Action<int> QuarterTurnsSelected;
 
@@ -59,7 +59,7 @@ internal sealed class TablePlayView
     public void Render(TableSnapshot snapshot)
     {
         Canvas.ForceUpdateCanvases();
-        _status.text = string.IsNullOrEmpty(snapshot.StopMessage) ? snapshot.Status : snapshot.StopMessage;
+        _status.text = StatusText(snapshot.Status);
         PaintPending(snapshot.View.PendingMatchTile, snapshot.QuarterTurns);
         PaintSecrets(snapshot);
         PaintBoard(snapshot);
@@ -68,9 +68,21 @@ internal sealed class TablePlayView
         _conceal.gameObject.SetActive(snapshot.ConcealVisible);
         if (snapshot.ConcealVisible)
         {
-            _concealLabel.text = "Seat " + snapshot.View.CurrentSeat.Value + ", confirm to see your missions.";
+            _concealLabel.text = SeatLabel(snapshot.View.CurrentSeat) + ", confirm to see your missions.";
         }
     }
+
+    private static string SeatLabel(SeatId seat) => "Seat " + seat.Value;
+
+    private static string StatusText(TableStatus status) =>
+        status.Kind switch
+        {
+            TableStatusKind.ToConfirm => SeatLabel(status.Seat.Value) + " to confirm.",
+            TableStatusKind.ToAct => SeatLabel(status.Seat.Value) + " to place.",
+            TableStatusKind.Won => SeatLabel(status.Seat.Value) + " wins.",
+            TableStatusKind.Ended => "The game has ended.",
+            _ => status.Message,
+        };
 
     private void PaintPending(Tile pending, int quarterTurns)
     {
@@ -91,7 +103,7 @@ internal sealed class TablePlayView
         Ui.Clear(_secrets);
         var title = Ui.Label("Title", _secrets, 18, SplatPalette.Muted, TextAnchor.UpperLeft);
         Ui.Anchored(title.rectTransform, new Vector2(0f, 0.82f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-        title.text = snapshot.SecretsVisible ? "Seat " + snapshot.View.Seat.Value + " missions" : "Missions hidden";
+        title.text = snapshot.SecretsVisible ? SeatLabel(snapshot.View.Seat) + " missions" : "Missions hidden";
         if (!snapshot.SecretsVisible)
         {
             return;
@@ -114,7 +126,8 @@ internal sealed class TablePlayView
         Ui.Clear(_board, 1);
 
         var view = snapshot.View;
-        if (view.Board.Cells.Count == 0)
+        // An emptied board still offers the origin, so only return when nothing is drawn or tappable.
+        if (view.Board.Cells.Count == 0 && snapshot.LegalPlacements.Count == 0)
         {
             return;
         }
@@ -131,7 +144,7 @@ internal sealed class TablePlayView
             maxY = Math.Max(maxY, occupiedCell.CellY);
         }
 
-        foreach (var highlight in snapshot.Highlights)
+        foreach (var highlight in snapshot.LegalPlacements)
         {
             minX = Math.Min(minX, highlight.TileX * 2);
             maxX = Math.Max(maxX, (highlight.TileX * 2) + 1);
@@ -172,12 +185,13 @@ internal sealed class TablePlayView
             return;
         }
 
-        foreach (var highlight in snapshot.Highlights)
+        foreach (var highlight in snapshot.LegalPlacements)
         {
-            var button = Ui.Button("Highlight" + highlight.TileX + "_" + highlight.TileY, lattice, string.Empty, SplatPalette.Highlight);
+            var tint = highlight.Kind == PlacementKind.OnTop ? SplatPalette.StackHighlight : SplatPalette.Highlight;
+            var button = Ui.Button("Highlight" + highlight.TileX + "_" + highlight.TileY, lattice, string.Empty, tint);
             PlaceCell(button.GetComponent<RectTransform>(), highlight.TileX * 2, highlight.TileY * 2, 2, 2, minX, minY, cellSize, 0f, 0f);
             var chosen = highlight;
-            button.onClick.AddListener(() => Tapped?.Invoke(chosen));
+            button.onClick.AddListener(() => Tapped?.Invoke(chosen.TileX, chosen.TileY));
         }
     }
 
@@ -197,7 +211,7 @@ internal sealed class TablePlayView
             Ui.Anchored(group, min, max, new Vector2(6f, 0f), new Vector2(-6f, 0f));
             var label = Ui.Label("Label", group, 16, SplatPalette.Ink, TextAnchor.UpperLeft);
             Ui.Anchored(label.rectTransform, new Vector2(0f, 0.72f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-            label.text = "Seat " + row.Seat.Value;
+            label.text = SeatLabel(row.Seat);
             for (var m = 0; m < row.Missions.Count; m++)
             {
                 var card = Ui.Image("Claim" + m, group, Color.white);
@@ -221,7 +235,7 @@ internal sealed class TablePlayView
             var button = Ui.Button("Turn" + turn, _rotation, turn.ToString(), fill);
             var x = turn / 4f;
             Ui.Anchored(button.GetComponent<RectTransform>(), new Vector2(x + 0.02f, 0.15f), new Vector2(x + 0.23f, 0.75f), Vector2.zero, Vector2.zero);
-            button.interactable = !snapshot.ConcealVisible && string.IsNullOrEmpty(snapshot.StopMessage) && !snapshot.View.HasEnded;
+            button.interactable = !snapshot.ConcealVisible && snapshot.Status.Kind == TableStatusKind.ToAct;
             button.onClick.AddListener(() => QuarterTurnsSelected?.Invoke(chosen));
         }
     }
