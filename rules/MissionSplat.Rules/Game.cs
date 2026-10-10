@@ -99,6 +99,11 @@ public sealed class Game
             return Reject(RejectionReason.NotYourTurn, "It is not that seat's turn.");
         }
 
+        if (PendingMatchTile is { } drawn)
+        {
+            RejectOpenRulings(drawn);
+        }
+
         return action switch
         {
             UseRotate rotate => ApplyRotate(rotate),
@@ -108,10 +113,11 @@ public sealed class Game
         };
     }
 
-    // Read-only and total: no drawn tile, an ended game, or quarter-turns outside 0..3 yield nothing, never an exception.
+    // Read-only and total: no drawn tile, an ended game, quarter-turns outside 0..3, or a tile showing two different
+    // powers (an open ruling) yield nothing, never an exception.
     public IReadOnlyList<LegalPlacement> LegalPlacements(int quarterTurnsClockwise)
     {
-        if (PendingMatchTile is not { } tile || !IsOrientation(quarterTurnsClockwise))
+        if (QueryTile is not { } tile || !IsOrientation(quarterTurnsClockwise))
         {
             return [];
         }
@@ -130,7 +136,7 @@ public sealed class Game
 
     public IReadOnlyList<BoardPosition> LegalTargets(SymbolId power)
     {
-        if (PendingMatchTile is not { } tile || !OrdinaryCatalog.IsUsePower(power))
+        if (QueryTile is not { } tile || !OrdinaryCatalog.IsUsePower(power))
         {
             return [];
         }
@@ -149,7 +155,7 @@ public sealed class Game
 
     // Stack is not counted: it is no separate use, only the on-top option inside a placement.
     public int RemainingUses(SymbolId power) =>
-        PendingMatchTile is { } tile && OrdinaryCatalog.IsUsePower(power) ? Remaining(tile, power, Spent(power)) : 0;
+        QueryTile is { } tile && OrdinaryCatalog.IsUsePower(power) ? Remaining(tile, power, Spent(power)) : 0;
 
     // The top tile at each occupied position, ordered by X then Y; a covered tile is not listed.
     public IReadOnlyList<VisibleTile> Tiles
@@ -447,6 +453,34 @@ public sealed class Game
     }
 
     private int Spent(SymbolId power) => power.Equals(OrdinaryCatalog.Rotate) ? _spent.Rotates : _spent.Bounces;
+
+    // The drawn tile as the queries see it: none when a tile shows two different powers, an open ruling Apply refuses.
+    private Tile? QueryTile => PendingMatchTile is { } tile && !ShowsMixedPowers(tile) ? tile : null;
+
+    // docs/rules.md leaves a tile showing two different powers open, so no command is applied while one is drawn.
+    private void RejectOpenRulings(Tile tile)
+    {
+        if (ShowsMixedPowers(tile))
+        {
+            throw new UnresolvedRulingException(
+                "The drawn tile shows more than one power. A tile showing two different powers is an open ruling, so this command was not applied.");
+        }
+    }
+
+    // Distinct in-play powers only: an unlisted power reads as a blank, and two cells of one power are not mixed.
+    private bool ShowsMixedPowers(Tile tile)
+    {
+        var distinct = 0;
+        foreach (var power in new[] { OrdinaryCatalog.Rotate, OrdinaryCatalog.Stack, OrdinaryCatalog.Bounce })
+        {
+            if (IsInPlay(power) && CountSymbol(tile, power) > 0)
+            {
+                distinct++;
+            }
+        }
+
+        return distinct > 1;
+    }
 
     // Every Apply that reaches a tile consumes the front match tile. An empty deck is the same open ruling for each.
     private Tile DrawnTile()

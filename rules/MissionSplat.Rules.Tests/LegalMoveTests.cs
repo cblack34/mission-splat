@@ -219,12 +219,14 @@ public class LegalMoveTests
     {
         var game = RepresentativeDeck.TwoSeats(
             Cards.Cross("start"),
-            Cards.Tile("drawn", Rotate, Bounce, Cards.Blank, Cards.Blank));
+            Cards.Tile("drawn", Rotate, Rotate, Cards.Blank, Cards.Blank));
 
-        var rotated = See.Game(RepresentativeDeck.Rotate(game, 0, 0));
+        var once = See.Game(RepresentativeDeck.Rotate(game, 0, 0));
+        var twice = See.Game(RepresentativeDeck.Rotate(once, 0, 0));
 
-        Assert.That(Agreement.Targets(rotated, OrdinaryCatalog.Rotate), Is.Empty);
-        Assert.That(Agreement.Targets(rotated, OrdinaryCatalog.Bounce), Is.EqualTo(Agreement.At((0, 0))));
+        Assert.That(Agreement.Targets(once, OrdinaryCatalog.Rotate), Is.EqualTo(Agreement.At((0, 0))));
+        Assert.That(Agreement.Targets(twice, OrdinaryCatalog.Rotate), Is.Empty);
+        Assert.That(Agreement.Targets(twice, OrdinaryCatalog.Bounce), Is.Empty);
     }
 
     [TestCase("rotate")]
@@ -264,14 +266,13 @@ public class LegalMoveTests
     {
         var game = RepresentativeDeck.TwoSeats(
             Cards.Cross("start"),
-            Cards.Tile("drawn", Rotate, Rotate, Bounce, Cards.Blank));
+            Cards.Tile("drawn", Rotate, Rotate, Cards.Blank, Cards.Blank));
 
         Assert.That(game.RemainingUses(OrdinaryCatalog.Rotate), Is.EqualTo(2));
-        Assert.That(game.RemainingUses(OrdinaryCatalog.Bounce), Is.EqualTo(1));
+        Assert.That(game.RemainingUses(OrdinaryCatalog.Bounce), Is.EqualTo(0));
 
         var once = See.Game(RepresentativeDeck.Rotate(game, 0, 0));
         Assert.That(once.RemainingUses(OrdinaryCatalog.Rotate), Is.EqualTo(1));
-        Assert.That(once.RemainingUses(OrdinaryCatalog.Bounce), Is.EqualTo(1));
         Assert.That(game.RemainingUses(OrdinaryCatalog.Rotate), Is.EqualTo(2), "the earlier match is unchanged");
 
         var twice = See.Game(RepresentativeDeck.Rotate(once, 0, 0));
@@ -285,7 +286,7 @@ public class LegalMoveTests
         var game = RepresentativeDeck.TwoSeats(
             Cards.BlankTile("start"),
             Cards.Tile("first", Rotate, Cards.Blank, Cards.Blank, Cards.Blank),
-            Cards.Tile("second", Rotate, Rotate, Stack, Cards.Blank));
+            Cards.Tile("second", Rotate, Rotate, Cards.Blank, Cards.Blank));
 
         var spent = See.Game(RepresentativeDeck.Rotate(game, 0, 0));
         Assert.That(spent.RemainingUses(OrdinaryCatalog.Rotate), Is.EqualTo(0));
@@ -307,6 +308,73 @@ public class LegalMoveTests
     }
 
     [Test]
+    public void RemainingUses_CountTwoBounceCells_OnOneDrawnTile()
+    {
+        var game = RepresentativeDeck.TwoSeats(
+            Cards.Cross("start"),
+            Cards.Tile("drawn", Bounce, Bounce, Cards.Blank, Cards.Blank));
+
+        Assert.That(game.RemainingUses(OrdinaryCatalog.Bounce), Is.EqualTo(2));
+        Assert.That(game.RemainingUses(OrdinaryCatalog.Rotate), Is.EqualTo(0));
+    }
+
+    [Test]
+    public void ATileWithTwoCellsOfOnePower_StillWorks_AsBeforeTheMixedPowerRuling()
+    {
+        var stacking = RepresentativeDeck.TwoSeats(
+            Cards.BlankTile("start"),
+            Cards.Tile("drawn", Stack, Stack, Cards.Blank, Cards.Blank));
+
+        Assert.That(Agreement.Placements(stacking, 0), Has.Some.Matches<LegalPlacement>(p => p.Kind == PlacementKind.OnTop));
+        Assert.That(RepresentativeDeck.Try(stacking, new Place(0, 0, 0)).IsAccepted, Is.True);
+    }
+
+    [TestCase("rotate", "bounce")]
+    [TestCase("rotate", "stack")]
+    [TestCase("stack", "bounce")]
+    public void ATileShowingTwoDifferentPowers_ThrowsOnEveryAction_AndLeavesTheGameUnchanged(string first, string second)
+    {
+        var game = MixedTile(first, second);
+
+        foreach (GameAction action in new GameAction[] { new Place(1, 0, 0), new UseRotate(0, 0, 1), new UseBounce(0, 0) })
+        {
+            Assert.That(
+                () => RepresentativeDeck.Try(game, action),
+                Throws.TypeOf<UnresolvedRulingException>().With.Message.EqualTo(
+                    "The drawn tile shows more than one power. A tile showing two different powers is an open ruling, so this command was not applied."));
+        }
+
+        Assert.That(game.TileCount, Is.EqualTo(1));
+        Assert.That(game.MatchDeckRemaining, Is.EqualTo(1));
+        Assert.That(game.CurrentSeat, Is.EqualTo(Cards.Seat("a")));
+        Assert.That(game.PendingMatchTile!.Id.Value, Is.EqualTo("drawn"));
+    }
+
+    [TestCase("rotate", "bounce")]
+    [TestCase("rotate", "stack")]
+    [TestCase("stack", "bounce")]
+    public void ATileShowingTwoDifferentPowers_AnswersEveryQueryWithNothing(string first, string second)
+    {
+        var game = MixedTile(first, second);
+
+        Assert.That(game.LegalPlacements(0), Is.Empty);
+        Assert.That(game.LegalTargets(OrdinaryCatalog.Rotate), Is.Empty);
+        Assert.That(game.LegalTargets(OrdinaryCatalog.Bounce), Is.Empty);
+        Assert.That(game.RemainingUses(OrdinaryCatalog.Rotate), Is.EqualTo(0));
+        Assert.That(game.RemainingUses(OrdinaryCatalog.Bounce), Is.EqualTo(0));
+    }
+
+    [Test]
+    public void ATileShowingTwoDifferentPowers_IsAcceptedAtSetup_AndIsMixedOnlyWhileBothPowersAreInPlay()
+    {
+        var game = MixedTile("rotate", "stack", OrdinaryCatalog.NonScoringSymbols.Where(s => !s.Equals(OrdinaryCatalog.Stack)).ToArray());
+
+        Assert.That(game.RemainingUses(OrdinaryCatalog.Rotate), Is.EqualTo(1));
+        Assert.That(game.LegalPlacements(0), Is.Not.Empty);
+        Assert.That(RepresentativeDeck.Try(game, new UseRotate(0, 0, 1)).IsAccepted, Is.True);
+    }
+
+    [Test]
     public void Queries_ChangeNothing_AndAnswerTheSameTwice()
     {
         var game = SurroundedCenter(Rotate);
@@ -322,6 +390,18 @@ public class LegalMoveTests
         Assert.That(game.CurrentSeat, Is.EqualTo(Cards.Seat("a")));
         Assert.That(game.MatchDeckRemaining, Is.EqualTo(1));
     }
+
+    // A drawn tile with one cell of each named power, dealt through the same setup check as any other.
+    private static Game MixedTile(string first, string second, IReadOnlyList<SymbolId>? symbols = null) =>
+        RepresentativeDeck.Start(
+            ["a", "b"],
+            "a",
+            [Cards.Purple("a1"), Cards.Purple("a2"), Cards.Purple("b1"), Cards.Purple("b2"), Cards.Purple("spare")],
+            [
+                Cards.Cross("start"),
+                Cards.Tile("drawn", Cell.Symbol(new SymbolId(first)), Cell.Symbol(new SymbolId(second)), Cards.Blank, Cards.Blank),
+            ],
+            symbols: symbols);
 
     // The start tile at the origin with a tile on each of its four sides, then the drawn tile showing one power.
     private static Game SurroundedCenter(Cell power)
