@@ -17,8 +17,8 @@ public sealed class TableSnapshot
         View = view ?? throw new ArgumentNullException(nameof(view));
         SecretsVisible = secretsVisible;
         ConcealVisible = concealVisible;
-        LegalPlacements = Copy(legalPlacements, nameof(legalPlacements));
-        LegalTargets = Copy(legalTargets, nameof(legalTargets));
+        LegalPlacements = Copied.List(legalPlacements, nameof(legalPlacements));
+        LegalTargets = Copied.List(legalTargets, nameof(legalTargets));
         QuarterTurns = quarterTurns;
         Status = status ?? throw new ArgumentNullException(nameof(status));
     }
@@ -37,22 +37,6 @@ public sealed class TableSnapshot
     public int QuarterTurns { get; }
 
     public TableStatus Status { get; }
-
-    private static T[] Copy<T>(IReadOnlyList<T>? items, string name)
-    {
-        if (items is null)
-        {
-            throw new ArgumentNullException(name);
-        }
-
-        var copy = new T[items.Count];
-        for (var i = 0; i < items.Count; i++)
-        {
-            copy[i] = items[i];
-        }
-
-        return copy;
-    }
 }
 
 public readonly record struct PowerTargets(SymbolId Power, IReadOnlyList<BoardPosition> Targets);

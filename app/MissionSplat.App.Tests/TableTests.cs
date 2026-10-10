@@ -167,6 +167,31 @@ public class TableTests
     }
 
     [Test]
+    public void Place_UsesTheOrientationSetByQuarterTurns()
+    {
+        var table = new Table(
+            new LocalSession(),
+            Humans(2),
+            Setup(2, Cards.BlankTile("start"), Cards.Tile("lid", Cell.Symbol(OrdinaryCatalog.Stack), Cards.Red, Cards.Red, Cards.Red)));
+        table.Start();
+        table.Confirm();
+        table.SetQuarterTurns(2);
+        Assert.That(table.Snapshot.QuarterTurns, Is.EqualTo(2));
+
+        var placed = table.Place(1, 0);
+
+        Assert.That(placed.IsAccepted, Is.True, placed.Rejection?.Message);
+        Assert.That(placed.Events.OfType<TilePlaced>().Single().QuarterTurnsClockwise, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void AUnshuffledStart_NeedsNoSeed_AndAShuffledOneWithoutIsRefused()
+    {
+        Assert.That(() => new Table(new LocalSession(), TableStart.PassAndPlayDraft()), Throws.ArgumentException);
+        Assert.That(() => new Table(new LocalSession(), TableStart.HumanThenAi()), Throws.Nothing);
+    }
+
+    [Test]
     public void AnUnresolvedRuling_StopsTheTable_WithTheRulesMessage()
     {
         var table = new Table(new LocalSession(), Humans(2), Setup(2, Cards.BlankTile("start")));

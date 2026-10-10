@@ -2,10 +2,7 @@ namespace MissionSplat.Player
 {
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using MissionSplat.App;
-using MissionSplat.Rules;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
@@ -58,13 +55,6 @@ public sealed class TableView : MonoBehaviour
 
         camera.clearFlags = CameraClearFlags.SolidColor;
         camera.backgroundColor = SplatPalette.Cream;
-    }
-
-    // Stack rides on the placement highlights; rotate and bounce targets are not drawn yet, so those powers are noted, not refused.
-    public void NotePowers(IReadOnlyList<SymbolId> inPlay)
-    {
-        var undrawn = inPlay.Where(power => !power.Equals(OrdinaryCatalog.Stack)).Select(power => power.Value);
-        Debug.Log("Powers in play without a target view yet: " + string.Join(", ", undrawn));
     }
 
     public void ShowSetup(TableStart draft)

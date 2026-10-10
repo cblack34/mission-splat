@@ -68,16 +68,18 @@ internal sealed class TablePlayView
         _conceal.gameObject.SetActive(snapshot.ConcealVisible);
         if (snapshot.ConcealVisible)
         {
-            _concealLabel.text = "Seat " + snapshot.View.CurrentSeat.Value + ", confirm to see your missions.";
+            _concealLabel.text = SeatLabel(snapshot.View.CurrentSeat) + ", confirm to see your missions.";
         }
     }
+
+    private static string SeatLabel(SeatId seat) => "Seat " + seat.Value;
 
     private static string StatusText(TableStatus status) =>
         status.Kind switch
         {
-            TableStatusKind.ToConfirm => "Seat " + status.Seat.Value.Value + " to confirm.",
-            TableStatusKind.ToAct => "Seat " + status.Seat.Value.Value + " to place.",
-            TableStatusKind.Won => "Seat " + status.Seat.Value.Value + " wins.",
+            TableStatusKind.ToConfirm => SeatLabel(status.Seat.Value) + " to confirm.",
+            TableStatusKind.ToAct => SeatLabel(status.Seat.Value) + " to place.",
+            TableStatusKind.Won => SeatLabel(status.Seat.Value) + " wins.",
             TableStatusKind.Ended => "The game has ended.",
             _ => status.Message,
         };
@@ -101,7 +103,7 @@ internal sealed class TablePlayView
         Ui.Clear(_secrets);
         var title = Ui.Label("Title", _secrets, 18, SplatPalette.Muted, TextAnchor.UpperLeft);
         Ui.Anchored(title.rectTransform, new Vector2(0f, 0.82f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-        title.text = snapshot.SecretsVisible ? "Seat " + snapshot.View.Seat.Value + " missions" : "Missions hidden";
+        title.text = snapshot.SecretsVisible ? SeatLabel(snapshot.View.Seat) + " missions" : "Missions hidden";
         if (!snapshot.SecretsVisible)
         {
             return;
@@ -208,7 +210,7 @@ internal sealed class TablePlayView
             Ui.Anchored(group, min, max, new Vector2(6f, 0f), new Vector2(-6f, 0f));
             var label = Ui.Label("Label", group, 16, SplatPalette.Ink, TextAnchor.UpperLeft);
             Ui.Anchored(label.rectTransform, new Vector2(0f, 0.72f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-            label.text = "Seat " + row.Seat.Value;
+            label.text = SeatLabel(row.Seat);
             for (var m = 0; m < row.Missions.Count; m++)
             {
                 var card = Ui.Image("Claim" + m, group, Color.white);

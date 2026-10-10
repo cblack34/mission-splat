@@ -31,29 +31,22 @@ public sealed class TableSession : MonoBehaviour
         _view.Started += Begin;
     }
 
-    public void Begin(TableStart start)
-    {
-        var session = new LocalSession();
-        Begin(new Table(session, start), session);
-    }
+    // The shuffle seed is drawn here, at the edge, so the App table stays deterministic.
+    public void Begin(TableStart start) =>
+        Begin(new Table(new LocalSession(), start, start.Shuffle ? new System.Random().Next() : (int?)null));
 
-    public void Begin(TableStart start, GameSetup setup)
-    {
-        var session = new LocalSession();
-        Begin(new Table(session, start, setup), session);
-    }
+    public void Begin(TableStart start, GameSetup setup) => Begin(new Table(new LocalSession(), start, setup));
 
-    public void Tap(int tileX, int tileY) => Forward(() => _table.Submit(new Place(tileX, tileY, _table.Snapshot.QuarterTurns)));
+    public void Tap(int tileX, int tileY) => Forward(() => _table.Place(tileX, tileY));
 
     public void ConfirmIncomingSeat() => Forward(() => _table.Confirm());
 
     public void SetQuarterTurns(int quarterTurns) => Forward(() => _table.SetQuarterTurns(quarterTurns));
 
-    private void Begin(Table table, ISession session)
+    private void Begin(Table table)
     {
         table.Start();
         _table = table;
-        _view.NotePowers(session.PowersInPlay);
         _view.Render(_table.Snapshot);
     }
 

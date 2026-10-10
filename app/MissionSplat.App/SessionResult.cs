@@ -16,15 +16,8 @@ public sealed class SessionResult
 
     public IReadOnlyList<GameEvent> Events { get; }
 
-    public static SessionResult Accept(IReadOnlyList<GameEvent> events)
-    {
-        if (events is null)
-        {
-            throw new ArgumentNullException(nameof(events));
-        }
-
-        return new SessionResult(null, Copy(events));
-    }
+    public static SessionResult Accept(IReadOnlyList<GameEvent> events) =>
+        new(null, Copied.List(events, nameof(events)));
 
     public static SessionResult Reject(SessionRejection rejection)
     {
@@ -36,26 +29,18 @@ public sealed class SessionResult
         return new SessionResult(rejection, []);
     }
 
-    public static SessionResult Reject(Rejection rejection)
+    public static SessionResult Reject(Rejection rejection) => Reject(SessionRejection.From(rejection));
+}
+
+public sealed record SessionRejection(string Message, Rejection? RulesRejection)
+{
+    public static SessionRejection From(Rejection rejection)
     {
         if (rejection is null)
         {
             throw new ArgumentNullException(nameof(rejection));
         }
 
-        return Reject(new SessionRejection(rejection.Message, rejection));
-    }
-
-    private static GameEvent[] Copy(IReadOnlyList<GameEvent> events)
-    {
-        var copy = new GameEvent[events.Count];
-        for (var i = 0; i < events.Count; i++)
-        {
-            copy[i] = events[i];
-        }
-
-        return copy;
+        return new SessionRejection(rejection.Message, rejection);
     }
 }
-
-public sealed record SessionRejection(string Message, Rejection? RulesRejection);

@@ -78,6 +78,9 @@ public sealed class Table
         return result;
     }
 
+    // The current human seat's tile, turned as SetQuarterTurns chose.
+    public SessionResult Place(int tileX, int tileY) => Submit(new Place(tileX, tileY, _quarterTurns));
+
     // The incoming human seat holds the device, so its hand may be drawn.
     public void Confirm()
     {
@@ -248,8 +251,13 @@ public sealed class Table
             throw new ArgumentNullException(nameof(start));
         }
 
-        // The toggle asks for a shuffle; the seed only makes it reproducible, and a fresh one is drawn when none is given.
-        int? seed = start.Shuffle ? shuffleSeed ?? new Random().Next() : null;
+        // The GUI edge draws the seed, so the same start and seed always deal the same table.
+        if (start.Shuffle && shuffleSeed is null)
+        {
+            throw new ArgumentException("A shuffled table needs a seed.", nameof(shuffleSeed));
+        }
+
+        int? seed = start.Shuffle ? shuffleSeed : null;
         return TableDeck.Ordinary(start.SeatsInTurnOrder(), start.SeatAt(start.FirstSeatIndex), seed);
     }
 

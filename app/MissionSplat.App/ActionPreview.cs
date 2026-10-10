@@ -16,21 +16,8 @@ public sealed class ActionPreview
 
     public IReadOnlyList<MissionId> ClaimedMissions { get; }
 
-    public static ActionPreview Accept(IReadOnlyList<MissionId> claimedMissions)
-    {
-        if (claimedMissions is null)
-        {
-            throw new ArgumentNullException(nameof(claimedMissions));
-        }
-
-        var copy = new MissionId[claimedMissions.Count];
-        for (var i = 0; i < claimedMissions.Count; i++)
-        {
-            copy[i] = claimedMissions[i];
-        }
-
-        return new ActionPreview(null, copy);
-    }
+    public static ActionPreview Accept(IReadOnlyList<MissionId> claimedMissions) =>
+        new(null, Copied.List(claimedMissions, nameof(claimedMissions)));
 
     public static ActionPreview Reject(SessionRejection rejection)
     {
@@ -42,13 +29,5 @@ public sealed class ActionPreview
         return new ActionPreview(rejection, []);
     }
 
-    public static ActionPreview Reject(Rejection rejection)
-    {
-        if (rejection is null)
-        {
-            throw new ArgumentNullException(nameof(rejection));
-        }
-
-        return Reject(new SessionRejection(rejection.Message, rejection));
-    }
+    public static ActionPreview Reject(Rejection rejection) => Reject(SessionRejection.From(rejection));
 }
