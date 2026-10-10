@@ -32,8 +32,15 @@ public sealed class TableSession : MonoBehaviour
     }
 
     // The shuffle seed is drawn here, at the edge, so the App table stays deterministic.
-    public void Begin(TableStart start) =>
+    public void Begin(TableStart start)
+    {
+        if (start is null)
+        {
+            throw new ArgumentNullException(nameof(start));
+        }
+
         Begin(new Table(new LocalSession(), start, start.Shuffle ? new System.Random().Next() : (int?)null));
+    }
 
     public void Begin(TableStart start, GameSetup setup) => Begin(new Table(new LocalSession(), start, setup));
 
