@@ -66,8 +66,8 @@ internal sealed class TablePlayView
     {
         Canvas.ForceUpdateCanvases();
         _status.text = StatusText(snapshot);
-        // The quarter-turn value is the rotate amount while a power is selected, so the pending tile does not preview it.
-        PaintPending(snapshot.View.PendingMatchTile, snapshot.SelectedPower is null ? snapshot.QuarterTurns : 0);
+        // Only rotate repurposes the quarter-turn row as its amount, so only then does the pending tile not preview it.
+        PaintPending(snapshot.View.PendingMatchTile, snapshot.SelectedPower is { } power && power.Equals(OrdinaryCatalog.Rotate) ? 0 : snapshot.QuarterTurns);
         PaintSecrets(snapshot);
         PaintBoard(snapshot);
         PaintClaims(snapshot.View);

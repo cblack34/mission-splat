@@ -258,6 +258,14 @@ public class TableSessionPlayModeTests
         Assert.That(LiveButton("Turn0").interactable, Is.True);
         Assert.That(FindText("Status").text, Does.Contain("bounce"));
 
+        // The lifter's bounce cell is local (0, 0); a quarter-turn moves it up the pending tile's lattice, so bounce still previews the turn.
+        Assert.That(PendingCellPosition("C00"), Is.EqualTo(Vector2.zero));
+        LiveButton("Turn1").onClick.Invoke();
+        Assert.That(PendingCellPosition("C00").x, Is.EqualTo(0f));
+        Assert.That(PendingCellPosition("C00").y, Is.GreaterThan(0f));
+        LiveButton("Turn0").onClick.Invoke();
+        Assert.That(PendingCellPosition("C00"), Is.EqualTo(Vector2.zero));
+
         LiveButton("Target1_0").onClick.Invoke();
 
         var snapshot = table.Snapshot;
@@ -360,6 +368,25 @@ public class TableSessionPlayModeTests
             OrdinaryCatalog.ClaimsRequiredToWin,
             missions,
             tiles);
+    }
+
+    // The live (not yet destroyed) cell of the pending tile's lattice.
+    private Vector2 PendingCellPosition(string cell) =>
+        _root.GetComponentsInChildren<RectTransform>(false)
+            .First(rect => rect.name == cell && IsUnder(rect, "Pending"))
+            .anchoredPosition;
+
+    private static bool IsUnder(Transform node, string ancestor)
+    {
+        for (var parent = node.parent; parent != null; parent = parent.parent)
+        {
+            if (parent.name == ancestor)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private RectTransform FindRect(string name)
