@@ -213,9 +213,14 @@ public sealed class Table
             return result;
         }
 
-        if (action is Place)
+        // The amount a rotate used is spent with it, so it never becomes the next placement's orientation.
+        if (action is Place || action is UseRotate)
         {
             _quarterTurns = 0;
+        }
+
+        if (action is Place)
+        {
             _selectedPower = null;
         }
 
@@ -250,12 +255,12 @@ public sealed class Table
         var seat = _session.CurrentSeat;
         var view = _session.View(seat);
         var human = IsHuman(seat);
-        if (human && !_conceal && !view.HasEnded && _stop is null)
+        var canAct = human && !_conceal && !view.HasEnded && _stop is null;
+        if (canAct)
         {
             StopWhenNoActionIsPossible(seat, view);
+            canAct = _stop is null;
         }
-
-        var canAct = human && !_conceal && !view.HasEnded && _stop is null;
 
         // Whatever ended the window (a stop, a hand-over, the last use spent) lands here, so the selection never outlives its power.
         if (_selectedPower is { } selected && !(canAct && HasUseRemaining(view, selected)))
@@ -265,8 +270,9 @@ public sealed class Table
 
         _snapshot = new TableSnapshot(
             view,
-            secretsVisible: human && !_conceal && !view.HasEnded && _stop is null,
+            secretsVisible: canAct,
             concealVisible: _conceal,
+            canAct,
             canAct && _selectedPower is null ? _session.LegalPlacements(seat, _quarterTurns) : [],
             canAct ? TargetsFor(seat, view) : [],
             _quarterTurns,

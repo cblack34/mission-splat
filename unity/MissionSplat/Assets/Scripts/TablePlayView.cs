@@ -196,40 +196,24 @@ internal sealed class TablePlayView
             return;
         }
 
-        PaintTargets(snapshot, lattice, minX, minY, cellSize);
+        // While a power is selected the snapshot offers no placements, so only its targets are drawn.
+        foreach (var target in snapshot.SelectedTargets)
+        {
+            AddTileButton(lattice, "Target" + target.TileX + "_" + target.TileY, target.TileX, target.TileY, SplatPalette.TargetHighlight, minX, minY, cellSize, () => TargetTapped?.Invoke(target.TileX, target.TileY));
+        }
+
         foreach (var highlight in snapshot.LegalPlacements)
         {
             var tint = highlight.Kind == PlacementKind.OnTop ? SplatPalette.StackHighlight : SplatPalette.Highlight;
-            var button = Ui.Button("Highlight" + highlight.TileX + "_" + highlight.TileY, lattice, string.Empty, tint);
-            PlaceCell(button.GetComponent<RectTransform>(), highlight.TileX * 2, highlight.TileY * 2, 2, 2, minX, minY, cellSize, 0f, 0f);
-            var chosen = highlight;
-            button.onClick.AddListener(() => Tapped?.Invoke(chosen.TileX, chosen.TileY));
+            AddTileButton(lattice, "Highlight" + highlight.TileX + "_" + highlight.TileY, highlight.TileX, highlight.TileY, tint, minX, minY, cellSize, () => Tapped?.Invoke(highlight.TileX, highlight.TileY));
         }
     }
 
-    // While a power is selected the snapshot offers no placements, so only its targets are drawn.
-    private void PaintTargets(TableSnapshot snapshot, RectTransform lattice, int minX, int minY, float cellSize)
+    private static void AddTileButton(RectTransform lattice, string name, int tileX, int tileY, Color tint, int minX, int minY, float cellSize, Action onTap)
     {
-        if (snapshot.SelectedPower is not { } selected)
-        {
-            return;
-        }
-
-        foreach (var entry in snapshot.LegalTargets)
-        {
-            if (!entry.Power.Equals(selected))
-            {
-                continue;
-            }
-
-            foreach (var target in entry.Targets)
-            {
-                var button = Ui.Button("Target" + target.TileX + "_" + target.TileY, lattice, string.Empty, SplatPalette.TargetHighlight);
-                PlaceCell(button.GetComponent<RectTransform>(), target.TileX * 2, target.TileY * 2, 2, 2, minX, minY, cellSize, 0f, 0f);
-                var chosen = target;
-                button.onClick.AddListener(() => TargetTapped?.Invoke(chosen.TileX, chosen.TileY));
-            }
-        }
+        var button = Ui.Button(name, lattice, string.Empty, tint);
+        PlaceCell(button.GetComponent<RectTransform>(), tileX * 2, tileY * 2, 2, 2, minX, minY, cellSize, 0f, 0f);
+        button.onClick.AddListener(() => onTap());
     }
 
     private void PaintClaims(SeatView view)
@@ -275,7 +259,7 @@ internal sealed class TablePlayView
             var button = Ui.Button("Turn" + turn, _rotation, turn.ToString(), fill);
             var x = turn / 4f;
             Ui.Anchored(button.GetComponent<RectTransform>(), new Vector2(x + 0.02f, 0.15f), new Vector2(x + 0.23f, 0.75f), Vector2.zero, Vector2.zero);
-            button.interactable = offered && !snapshot.ConcealVisible && snapshot.Status.Kind == TableStatusKind.ToAct;
+            button.interactable = offered && snapshot.CanAct;
             button.onClick.AddListener(() => QuarterTurnsSelected?.Invoke(chosen));
         }
     }
@@ -288,12 +272,11 @@ internal sealed class TablePlayView
         title.text = "Powers";
         var charges = snapshot.View.RemainingUses;
         var slots = Math.Max(3, charges.Count + 1);
-        var canAct = !snapshot.ConcealVisible && snapshot.Status.Kind == TableStatusKind.ToAct;
         for (var i = 0; i < charges.Count; i++)
         {
             var charge = charges[i];
             var selected = snapshot.SelectedPower is { } current && current.Equals(charge.Power);
-            var usable = canAct && charge.Remaining > 0;
+            var usable = snapshot.CanAct && charge.Remaining > 0;
             var name = PowerName(charge.Power);
             var fill = selected ? SplatPalette.PowerSelected : usable ? SplatPalette.Muted : SplatPalette.Gray;
             var button = Ui.Button("Power" + name, _powers, name + " · " + charge.Remaining + " left", fill);

@@ -133,7 +133,7 @@ public class TableTests
     }
 
     [Test]
-    public void APowerUse_OnAHumanSeat_DoesNotConcealAgain_AndKeepsTheChosenOrientation()
+    public void APowerUse_OnAHumanSeat_DoesNotConcealAgain()
     {
         var table = new Table(
             new LocalSession(),
@@ -157,7 +157,7 @@ public class TableTests
         Assert.That(after.SecretsVisible, Is.True);
         Assert.That(after.View.CurrentSeat, Is.EqualTo(First));
         Assert.That(after.Status.Kind, Is.EqualTo(TableStatusKind.ToAct));
-        Assert.That(after.QuarterTurns, Is.EqualTo(2));
+        Assert.That(after.QuarterTurns, Is.EqualTo(0));
         Assert.That(after.View.RemainingUses.Single(charge => charge.Power.Equals(OrdinaryCatalog.Rotate)).Remaining, Is.EqualTo(0));
         Assert.That(after.LegalTargets.Single(targets => targets.Power.Equals(OrdinaryCatalog.Rotate)).Targets, Is.Empty);
 
@@ -293,7 +293,7 @@ public class TableTests
         var view = session.View(First);
         var targets = new List<BoardPosition> { new(0, 0) };
         var powers = new List<PowerTargets> { new(OrdinaryCatalog.Bounce, targets) };
-        var snapshot = new TableSnapshot(view, false, false, [], powers, 0, TableStatus.ToAct(First));
+        var snapshot = new TableSnapshot(view, false, false, false, [], powers, 0, TableStatus.ToAct(First), null);
 
         targets.Add(new BoardPosition(5, 5));
         powers.Add(new PowerTargets(OrdinaryCatalog.Rotate, []));
@@ -461,6 +461,34 @@ public class TableTests
         Assert.That(table.Snapshot.View.CurrentSeat, Is.EqualTo(First));
         Assert.That(table.Snapshot.SelectedPower, Is.Null);
         Assert.That(table.Snapshot.LegalPlacements, Is.Not.Empty);
+    }
+
+    [Test]
+    public void AnAcceptedRotate_DoesNotLeakItsAmountIntoThePlacementOrientation()
+    {
+        var table = RotateTable();
+        table.SelectPower(OrdinaryCatalog.Rotate);
+        table.SetQuarterTurns(2);
+
+        var rotated = table.UseAt(0, 0);
+
+        Assert.That(rotated.IsAccepted, Is.True, rotated.Rejection?.Message);
+        Assert.That(table.Snapshot.QuarterTurns, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void TheSnapshot_ReportsTheSelectedPowersTargets_AndWhetherTheSeatCanAct()
+    {
+        var table = BounceTableAtTheSecondSeat();
+        Assert.That(table.Snapshot.CanAct, Is.True);
+        Assert.That(table.Snapshot.SelectedTargets, Is.Empty);
+
+        table.SelectPower(OrdinaryCatalog.Bounce);
+
+        Assert.That(
+            table.Snapshot.SelectedTargets,
+            Is.EqualTo(table.Snapshot.LegalTargets.Single(entry => entry.Power.Equals(OrdinaryCatalog.Bounce)).Targets));
+        Assert.That(table.Snapshot.SelectedTargets, Is.Not.Empty);
     }
 
     [Test]
