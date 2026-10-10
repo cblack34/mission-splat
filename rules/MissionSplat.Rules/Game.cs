@@ -119,19 +119,7 @@ public sealed class Game
             return [];
         }
 
-        var legal = new List<LegalPlacement>();
-        foreach (var position in _ruleset.PlacementCandidates(_grid))
-        {
-            if (_ruleset.PlacementRefusal(_grid, tile, position.TileX, position.TileY) is null)
-            {
-                legal.Add(new LegalPlacement(
-                    position.TileX,
-                    position.TileY,
-                    _ruleset.KindAt(_grid, position.TileX, position.TileY)));
-            }
-        }
-
-        return legal;
+        return _ruleset.LegalPlacements(_grid, tile);
     }
 
     public IReadOnlyList<BoardPosition> LegalTargets(SymbolId power)
@@ -141,35 +129,21 @@ public sealed class Game
             return [];
         }
 
-        var targets = new List<BoardPosition>();
-        foreach (var coord in _grid.TilePositions)
-        {
-            if (_ruleset.UseRefusal(_grid, tile, power, _spent.Of(power), coord.X, coord.Y) is null)
-            {
-                targets.Add(new BoardPosition(coord.X, coord.Y));
-            }
-        }
-
-        return BoardOrder.Sorted(targets);
+        return _ruleset.LegalTargets(_grid, tile, power, _spent);
     }
 
     // Stack is not counted: it is no separate use, only the on-top option inside a placement.
     public int RemainingUses(SymbolId power) =>
-        QueryTile is { } tile && OrdinaryCatalog.IsUsePower(power) ? _ruleset.Remaining(tile, power, _spent.Of(power)) : 0;
+        QueryTile is { } tile && OrdinaryCatalog.IsUsePower(power) ? _ruleset.Remaining(tile, power, _spent) : 0;
 
     // The top tile at each occupied position, ordered by X then Y; a covered tile is not listed.
     public IReadOnlyList<VisibleTile> Tiles
     {
         get
         {
-            var positions = new List<BoardPosition>(_grid.TileCount);
-            foreach (var coord in _grid.TilePositions)
-            {
-                positions.Add(new BoardPosition(coord.X, coord.Y));
-            }
-
+            var positions = BoardOrder.SortedPositions(_grid.TilePositions);
             var tiles = new List<VisibleTile>(positions.Count);
-            foreach (var position in BoardOrder.Sorted(positions))
+            foreach (var position in positions)
             {
                 var tile = _grid.TileAt(position.TileX, position.TileY)
                     ?? throw new InvalidOperationException("A listed board position holds no tile.");
@@ -197,14 +171,8 @@ public sealed class Game
         IReadOnlyList<(int X, int Y, Cell Value)> located,
         TileId? covered)
     {
-        var written = new HashSet<CellCoord>(located.Count);
-        foreach (var (x, y, _) in located)
-        {
-            written.Add(new CellCoord(x, y));
-        }
-
         var acting = _seats[_currentIndex];
-        var completed = _ruleset.CompletedMissions(acting.Hand, nextGrid.Cells, written);
+        var completed = _ruleset.CompletedMissions(nextGrid, located, acting.Hand);
         if (completed.Count > _missionDeck.Length)
         {
             throw new UnresolvedRulingException(
@@ -269,7 +237,7 @@ public sealed class Game
             _grid,
             drawn,
             OrdinaryCatalog.Rotate,
-            _spent.Of(OrdinaryCatalog.Rotate),
+            _spent,
             rotate.TileX,
             rotate.TileY);
         if (refusal is not null)
@@ -291,7 +259,7 @@ public sealed class Game
             _grid,
             drawn,
             OrdinaryCatalog.Bounce,
-            _spent.Of(OrdinaryCatalog.Bounce),
+            _spent,
             bounce.TileX,
             bounce.TileY);
         if (refusal is not null)

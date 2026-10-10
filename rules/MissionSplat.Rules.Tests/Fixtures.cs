@@ -98,6 +98,9 @@ internal static class Cards
 
     public static Tile BlankTile(string id) => Solid(id, Blank);
 
+    // One given power cell, the rest blank.
+    public static Tile Showing(string id, Cell power) => Tile(id, power, Blank, Blank, Blank);
+
     public static Cell Symbol(string name) => Cell.Symbol(new SymbolId(name));
 
     // Four distinct colors, so every orientation of it reads differently.

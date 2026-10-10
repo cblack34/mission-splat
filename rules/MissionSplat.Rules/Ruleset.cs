@@ -17,9 +17,9 @@ internal sealed class Ruleset
     public bool ShowsMixedPowers(Tile tile)
     {
         var distinct = 0;
-        foreach (var power in new[] { OrdinaryCatalog.Rotate, OrdinaryCatalog.Stack, OrdinaryCatalog.Bounce })
+        foreach (var symbol in _symbols)
         {
-            if (IsInPlay(power) && CountSymbol(tile, power) > 0)
+            if (OrdinaryCatalog.IsPower(symbol) && CountSymbol(tile, symbol) > 0)
             {
                 distinct++;
             }
@@ -29,14 +29,21 @@ internal sealed class Ruleset
     }
 
     // A power symbol the setup does not list is a blank: it grants no use and no on-top placement.
-    public int Remaining(Tile drawn, SymbolId power, int spent) =>
-        IsInPlay(power) ? CountSymbol(drawn, power) - spent : 0;
+    public int Remaining(Tile drawn, SymbolId power, SpentUses spent) =>
+        IsInPlay(power) ? CountSymbol(drawn, power) - spent.Of(power) : 0;
 
+    // A mission completes only when a cell this placement wrote is part of its pattern.
     public List<Mission> CompletedMissions(
-        IReadOnlyList<Mission> hand,
-        IReadOnlyDictionary<CellCoord, Cell> cells,
-        HashSet<CellCoord> written)
+        Grid grid,
+        IReadOnlyList<(int X, int Y, Cell Value)> located,
+        IReadOnlyList<Mission> hand)
     {
+        var written = new HashSet<CellCoord>(located.Count);
+        foreach (var (x, y, _) in located)
+        {
+            written.Add(new CellCoord(x, y));
+        }
+
         var completed = new List<Mission>();
         foreach (var mission in hand)
         {
@@ -45,7 +52,7 @@ internal sealed class Ruleset
                 continue;
             }
 
-            if (PatternSearch.WasCompletedBy(mission.Pattern, mission.Color, cells, written))
+            if (PatternSearch.WasCompletedBy(mission.Pattern, mission.Color, grid.Cells, written))
             {
                 completed.Add(mission);
             }
@@ -82,8 +89,38 @@ internal sealed class Ruleset
     public PlacementKind KindAt(Grid grid, int tileX, int tileY) =>
         grid.HasTile(tileX, tileY) ? PlacementKind.OnTop : PlacementKind.Beside;
 
+    // Every position the drawn tile may take, X then Y, each tagged as beside or on top.
+    public IReadOnlyList<LegalPlacement> LegalPlacements(Grid grid, Tile drawn)
+    {
+        var legal = new List<LegalPlacement>();
+        foreach (var position in PlacementCandidates(grid))
+        {
+            if (PlacementRefusal(grid, drawn, position.TileX, position.TileY) is null)
+            {
+                legal.Add(new LegalPlacement(position.TileX, position.TileY, KindAt(grid, position.TileX, position.TileY)));
+            }
+        }
+
+        return legal;
+    }
+
+    // Every board tile the power may target, X then Y.
+    public IReadOnlyList<BoardPosition> LegalTargets(Grid grid, Tile drawn, SymbolId power, SpentUses spent)
+    {
+        var targets = new List<BoardPosition>();
+        foreach (var position in BoardOrder.SortedPositions(grid.TilePositions))
+        {
+            if (UseRefusal(grid, drawn, power, spent, position.TileX, position.TileY) is null)
+            {
+                targets.Add(position);
+            }
+        }
+
+        return targets;
+    }
+
     // Every position the drawn tile could be offered: each occupied one and its four neighbors, or the origin alone.
-    public List<BoardPosition> PlacementCandidates(Grid grid)
+    private static List<BoardPosition> PlacementCandidates(Grid grid)
     {
         var candidates = new HashSet<BoardPosition>();
         if (grid.TileCount == 0)
@@ -91,13 +128,13 @@ internal sealed class Ruleset
             candidates.Add(new BoardPosition(0, 0));
         }
 
-        foreach (var coord in grid.TilePositions)
+        foreach (var position in BoardOrder.SortedPositions(grid.TilePositions))
         {
-            candidates.Add(new BoardPosition(coord.X, coord.Y));
-            candidates.Add(new BoardPosition(coord.X + 1, coord.Y));
-            candidates.Add(new BoardPosition(coord.X - 1, coord.Y));
-            candidates.Add(new BoardPosition(coord.X, coord.Y + 1));
-            candidates.Add(new BoardPosition(coord.X, coord.Y - 1));
+            candidates.Add(position);
+            candidates.Add(new BoardPosition(position.TileX + 1, position.TileY));
+            candidates.Add(new BoardPosition(position.TileX - 1, position.TileY));
+            candidates.Add(new BoardPosition(position.TileX, position.TileY + 1));
+            candidates.Add(new BoardPosition(position.TileX, position.TileY - 1));
         }
 
         return BoardOrder.Sorted(candidates);
@@ -105,7 +142,7 @@ internal sealed class Ruleset
 
     // The single decision for a power use, shared by Apply and LegalTargets: a charge must remain, then the target
     // must be legal. Each use power answers for itself; only rotate and bounce are uses.
-    public Rejection? UseRefusal(Grid grid, Tile drawn, SymbolId power, int spent, int tileX, int tileY)
+    public Rejection? UseRefusal(Grid grid, Tile drawn, SymbolId power, SpentUses spent, int tileX, int tileY)
     {
         if (power.Equals(OrdinaryCatalog.Rotate))
         {
@@ -120,7 +157,7 @@ internal sealed class Ruleset
         throw new ArgumentOutOfRangeException(nameof(power), power, "Only rotate and bounce are uses.");
     }
 
-    private Rejection? RotateRefusal(Grid grid, Tile drawn, int spent, int tileX, int tileY)
+    private Rejection? RotateRefusal(Grid grid, Tile drawn, SpentUses spent, int tileX, int tileY)
     {
         if (Remaining(drawn, OrdinaryCatalog.Rotate, spent) == 0)
         {
@@ -137,7 +174,7 @@ internal sealed class Ruleset
             : null;
     }
 
-    private Rejection? BounceRefusal(Grid grid, Tile drawn, int spent, int tileX, int tileY)
+    private Rejection? BounceRefusal(Grid grid, Tile drawn, SpentUses spent, int tileX, int tileY)
     {
         if (Remaining(drawn, OrdinaryCatalog.Bounce, spent) == 0)
         {
