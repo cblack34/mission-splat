@@ -15,12 +15,15 @@ internal sealed class TablePlayView
     private readonly RectTransform _board;
     private readonly RectTransform _claims;
     private readonly RectTransform _rotation;
+    private readonly RectTransform _powers;
     private readonly RectTransform _conceal;
     private readonly Text _concealLabel;
 
     public event Action<int, int> Tapped;
     public event Action Confirmed;
     public event Action<int> QuarterTurnsSelected;
+    public event Action<SymbolId?> PowerSelected;
+    public event Action<int, int> TargetTapped;
 
     public TablePlayView(RectTransform play)
     {
@@ -35,8 +38,11 @@ internal sealed class TablePlayView
         Ui.Anchored(_secrets, new Vector2(0.20f, 0.72f), new Vector2(0.72f, 0.91f), Vector2.zero, Vector2.zero);
         _rotation = Ui.Rect("Rotation", play);
         Ui.Anchored(_rotation, new Vector2(0.74f, 0.72f), new Vector2(0.98f, 0.91f), Vector2.zero, Vector2.zero);
+        // The power band sits under the top band, so the quarter-turn row above it doubles as the rotate amount.
+        _powers = Ui.Rect("Powers", play);
+        Ui.Anchored(_powers, new Vector2(0.02f, 0.63f), new Vector2(0.98f, 0.71f), Vector2.zero, Vector2.zero);
         _board = Ui.Rect("Board", play);
-        Ui.Anchored(_board, new Vector2(0.02f, 0.18f), new Vector2(0.98f, 0.70f), Vector2.zero, Vector2.zero);
+        Ui.Anchored(_board, new Vector2(0.02f, 0.18f), new Vector2(0.98f, 0.62f), Vector2.zero, Vector2.zero);
         var boardFill = Ui.Image("BoardFill", _board, Color.white);
         Ui.Stretch(boardFill.rectTransform);
         boardFill.color = new Color(1f, 1f, 1f, 0.35f);
@@ -59,12 +65,14 @@ internal sealed class TablePlayView
     public void Render(TableSnapshot snapshot)
     {
         Canvas.ForceUpdateCanvases();
-        _status.text = StatusText(snapshot.Status);
-        PaintPending(snapshot.View.PendingMatchTile, snapshot.QuarterTurns);
+        _status.text = StatusText(snapshot);
+        // The quarter-turn value is the rotate amount while a power is selected, so the pending tile does not preview it.
+        PaintPending(snapshot.View.PendingMatchTile, snapshot.SelectedPower is null ? snapshot.QuarterTurns : 0);
         PaintSecrets(snapshot);
         PaintBoard(snapshot);
         PaintClaims(snapshot.View);
         PaintRotation(snapshot);
+        PaintPowers(snapshot);
         _conceal.gameObject.SetActive(snapshot.ConcealVisible);
         if (snapshot.ConcealVisible)
         {
@@ -74,15 +82,18 @@ internal sealed class TablePlayView
 
     private static string SeatLabel(SeatId seat) => "Seat " + seat.Value;
 
-    private static string StatusText(TableStatus status) =>
-        status.Kind switch
+    private static string StatusText(TableSnapshot snapshot)
+    {
+        var status = snapshot.Status;
+        return status.Kind switch
         {
             TableStatusKind.ToConfirm => SeatLabel(status.Seat.Value) + " to confirm.",
-            TableStatusKind.ToAct => SeatLabel(status.Seat.Value) + " to place.",
+            TableStatusKind.ToAct => SeatLabel(status.Seat.Value) + (snapshot.SelectedPower is { } power ? ": pick a tile to " + power.Value + "." : " to place."),
             TableStatusKind.Won => SeatLabel(status.Seat.Value) + " wins.",
             TableStatusKind.Ended => "The game has ended.",
             _ => status.Message,
         };
+    }
 
     private void PaintPending(Tile pending, int quarterTurns)
     {
@@ -185,6 +196,7 @@ internal sealed class TablePlayView
             return;
         }
 
+        PaintTargets(snapshot, lattice, minX, minY, cellSize);
         foreach (var highlight in snapshot.LegalPlacements)
         {
             var tint = highlight.Kind == PlacementKind.OnTop ? SplatPalette.StackHighlight : SplatPalette.Highlight;
@@ -192,6 +204,31 @@ internal sealed class TablePlayView
             PlaceCell(button.GetComponent<RectTransform>(), highlight.TileX * 2, highlight.TileY * 2, 2, 2, minX, minY, cellSize, 0f, 0f);
             var chosen = highlight;
             button.onClick.AddListener(() => Tapped?.Invoke(chosen.TileX, chosen.TileY));
+        }
+    }
+
+    // While a power is selected the snapshot offers no placements, so only its targets are drawn.
+    private void PaintTargets(TableSnapshot snapshot, RectTransform lattice, int minX, int minY, float cellSize)
+    {
+        if (snapshot.SelectedPower is not { } selected)
+        {
+            return;
+        }
+
+        foreach (var entry in snapshot.LegalTargets)
+        {
+            if (!entry.Power.Equals(selected))
+            {
+                continue;
+            }
+
+            foreach (var target in entry.Targets)
+            {
+                var button = Ui.Button("Target" + target.TileX + "_" + target.TileY, lattice, string.Empty, SplatPalette.TargetHighlight);
+                PlaceCell(button.GetComponent<RectTransform>(), target.TileX * 2, target.TileY * 2, 2, 2, minX, minY, cellSize, 0f, 0f);
+                var chosen = target;
+                button.onClick.AddListener(() => TargetTapped?.Invoke(chosen.TileX, chosen.TileY));
+            }
         }
     }
 
@@ -227,18 +264,60 @@ internal sealed class TablePlayView
         Ui.Clear(_rotation);
         var title = Ui.Label("Title", _rotation, 18, SplatPalette.Muted, TextAnchor.UpperLeft);
         Ui.Anchored(title.rectTransform, new Vector2(0f, 0.82f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-        title.text = "Quarter-turns";
+        var rotating = snapshot.SelectedPower is { } power && power.Equals(OrdinaryCatalog.Rotate);
+        title.text = rotating ? "Rotate by" : "Quarter-turns";
         for (var turn = 0; turn < 4; turn++)
         {
             var chosen = turn;
-            var fill = turn == snapshot.QuarterTurns ? SplatPalette.Green : SplatPalette.Muted;
+            // Rules refuses a rotate by zero, so that choice is greyed out instead of offering a dead tap.
+            var offered = !(rotating && turn == 0);
+            var fill = !offered ? SplatPalette.Gray : turn == snapshot.QuarterTurns ? SplatPalette.Green : SplatPalette.Muted;
             var button = Ui.Button("Turn" + turn, _rotation, turn.ToString(), fill);
             var x = turn / 4f;
             Ui.Anchored(button.GetComponent<RectTransform>(), new Vector2(x + 0.02f, 0.15f), new Vector2(x + 0.23f, 0.75f), Vector2.zero, Vector2.zero);
-            button.interactable = !snapshot.ConcealVisible && snapshot.Status.Kind == TableStatusKind.ToAct;
+            button.interactable = offered && !snapshot.ConcealVisible && snapshot.Status.Kind == TableStatusKind.ToAct;
             button.onClick.AddListener(() => QuarterTurnsSelected?.Invoke(chosen));
         }
     }
+
+    private void PaintPowers(TableSnapshot snapshot)
+    {
+        Ui.Clear(_powers);
+        var title = Ui.Label("Title", _powers, 18, SplatPalette.Muted, TextAnchor.UpperLeft);
+        Ui.Anchored(title.rectTransform, new Vector2(0f, 0.78f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+        title.text = "Powers";
+        var charges = snapshot.View.RemainingUses;
+        var slots = Math.Max(3, charges.Count + 1);
+        var canAct = !snapshot.ConcealVisible && snapshot.Status.Kind == TableStatusKind.ToAct;
+        for (var i = 0; i < charges.Count; i++)
+        {
+            var charge = charges[i];
+            var selected = snapshot.SelectedPower is { } current && current.Equals(charge.Power);
+            var usable = canAct && charge.Remaining > 0;
+            var name = PowerName(charge.Power);
+            var fill = selected ? SplatPalette.PowerSelected : usable ? SplatPalette.Muted : SplatPalette.Gray;
+            var button = Ui.Button("Power" + name, _powers, name + " · " + charge.Remaining + " left", fill);
+            AnchorSlot(button.GetComponent<RectTransform>(), i, slots);
+            button.interactable = usable;
+            var power = charge.Power;
+            button.onClick.AddListener(() => PowerSelected?.Invoke(selected ? null : power));
+        }
+
+        if (snapshot.SelectedPower is not null)
+        {
+            var back = Ui.Button("PlaceInstead", _powers, "Place instead", SplatPalette.Green);
+            AnchorSlot(back.GetComponent<RectTransform>(), charges.Count, slots);
+            back.onClick.AddListener(() => PowerSelected?.Invoke(null));
+        }
+    }
+
+    private static void AnchorSlot(RectTransform rect, int index, int slots)
+    {
+        var x = index / (float)slots;
+        Ui.Anchored(rect, new Vector2(x + 0.01f, 0.05f), new Vector2(x + (1f / slots) - 0.01f, 0.76f), Vector2.zero, Vector2.zero);
+    }
+
+    private static string PowerName(SymbolId power) => char.ToUpperInvariant(power.Value[0]) + power.Value.Substring(1);
 
     // Four is the ordinary row. One placement can claim both held missions, so a row at three can finish at five and must stay inside its group.
     private static (Vector2 Min, Vector2 Max) ClaimCardAnchors(int index, int missionCount)

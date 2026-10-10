@@ -3,6 +3,7 @@ namespace MissionSplat.Player
 
 using System;
 using MissionSplat.App;
+using MissionSplat.Rules;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
@@ -26,6 +27,8 @@ public sealed class TableView : MonoBehaviour
     public event Action<int, int> Tapped;
     public event Action Confirmed;
     public event Action<int> QuarterTurnsSelected;
+    public event Action<SymbolId?> PowerSelected;
+    public event Action<int, int> TargetTapped;
     public event Action<TableStart> Started;
 
     private void Awake()
@@ -100,6 +103,8 @@ public sealed class TableView : MonoBehaviour
         _playView.Tapped += (tileX, tileY) => Tapped?.Invoke(tileX, tileY);
         _playView.Confirmed += () => Confirmed?.Invoke();
         _playView.QuarterTurnsSelected += turns => QuarterTurnsSelected?.Invoke(turns);
+        _playView.PowerSelected += power => PowerSelected?.Invoke(power);
+        _playView.TargetTapped += (tileX, tileY) => TargetTapped?.Invoke(tileX, tileY);
         _setupView.Started += draft => Started?.Invoke(draft);
         _play.gameObject.SetActive(false);
     }

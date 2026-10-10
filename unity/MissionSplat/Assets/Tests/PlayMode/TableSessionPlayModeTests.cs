@@ -213,6 +213,127 @@ public class TableSessionPlayModeTests
         }
     }
 
+    [Test]
+    public void SelectingRotate_TurnsTheTappedTile_AndKeepsTheDrawnTileToPlace()
+    {
+        var table = BeginHumanTable(RotateSetup());
+        var before = CellsOf(table.Snapshot.View);
+        Assert.That(LiveButtons("Highlight"), Is.Not.Empty);
+
+        LiveButton("PowerRotate").onClick.Invoke();
+
+        Assert.That(table.Snapshot.SelectedPower, Is.EqualTo(OrdinaryCatalog.Rotate));
+        Assert.That(LiveButtons("Highlight"), Is.Empty);
+        Assert.That(LiveButton("Target0_0"), Is.Not.Null);
+        Assert.That(LiveButton("Turn0").interactable, Is.False);
+        Assert.That(LiveButton("Turn2").interactable, Is.True);
+        Assert.That(FindText("Status").text, Does.Contain("rotate"));
+
+        LiveButton("Turn2").onClick.Invoke();
+        LiveButton("Target0_0").onClick.Invoke();
+
+        var snapshot = table.Snapshot;
+        Assert.That(CellsOf(snapshot.View), Is.Not.EqualTo(before));
+        Assert.That(snapshot.View.PendingMatchTile, Is.Not.Null);
+        Assert.That(snapshot.View.CurrentSeat.Value, Is.EqualTo("1"));
+        Assert.That(snapshot.SelectedPower, Is.Null);
+        Assert.That(ButtonCaption("PowerRotate"), Does.Contain("0 left"));
+        Assert.That(LiveButton("PowerRotate").interactable, Is.False);
+        Assert.That(LiveButtons("Target"), Is.Empty);
+        Assert.That(LiveButtons("Highlight"), Is.Not.Empty);
+    }
+
+    [Test]
+    public void SelectingBounce_RemovesTheTappedTile_ThenAHighlightPlacesTheDrawnTile()
+    {
+        var table = BeginHumanTable(BounceBoardSetup());
+        LiveButton("Highlight1_0").onClick.Invoke();
+        table.ConfirmIncomingSeat();
+        Assert.That(table.Snapshot.View.Board.Tiles.Count, Is.EqualTo(2));
+        Assert.That(table.Snapshot.View.CurrentSeat.Value, Is.EqualTo("2"));
+
+        LiveButton("PowerBounce").onClick.Invoke();
+
+        Assert.That(table.Snapshot.SelectedPower, Is.EqualTo(OrdinaryCatalog.Bounce));
+        Assert.That(LiveButton("Turn0").interactable, Is.True);
+        Assert.That(FindText("Status").text, Does.Contain("bounce"));
+
+        LiveButton("Target1_0").onClick.Invoke();
+
+        var snapshot = table.Snapshot;
+        Assert.That(snapshot.View.Board.Tiles.Count, Is.EqualTo(1));
+        Assert.That(snapshot.View.PendingMatchTile, Is.Not.Null);
+        Assert.That(snapshot.View.CurrentSeat.Value, Is.EqualTo("2"));
+        Assert.That(snapshot.SelectedPower, Is.Null);
+        Assert.That(ButtonCaption("PowerBounce"), Does.Contain("0 left"));
+
+        LiveButtons("Highlight").First().onClick.Invoke();
+
+        Assert.That(table.Snapshot.View.Board.Tiles.Count, Is.EqualTo(2));
+        Assert.That(table.Snapshot.View.CurrentSeat.Value, Is.EqualTo("1"));
+    }
+
+    [Test]
+    public void PlaceInstead_AfterSelectingAPower_ReturnsThePlacementHighlights()
+    {
+        var table = BeginHumanTable(RotateSetup());
+        Assert.That(LiveButton("PlaceInstead"), Is.Null);
+
+        LiveButton("PowerRotate").onClick.Invoke();
+        Assert.That(LiveButtons("Highlight"), Is.Empty);
+
+        LiveButton("PlaceInstead").onClick.Invoke();
+
+        Assert.That(table.Snapshot.SelectedPower, Is.Null);
+        Assert.That(LiveButtons("Highlight"), Is.Not.Empty);
+        Assert.That(LiveButtons("Target"), Is.Empty);
+        Assert.That(LiveButton("PlaceInstead"), Is.Null);
+        Assert.That(ButtonCaption("PowerRotate"), Does.Contain("1 left"));
+    }
+
+    [Test]
+    public void TappingTheSelectedPowerAgain_Deselects()
+    {
+        var table = BeginHumanTable(RotateSetup());
+
+        LiveButton("PowerRotate").onClick.Invoke();
+        LiveButton("PowerRotate").onClick.Invoke();
+
+        Assert.That(table.Snapshot.SelectedPower, Is.Null);
+        Assert.That(LiveButtons("Highlight"), Is.Not.Empty);
+    }
+
+    private TableSession BeginHumanTable(GameSetup setup)
+    {
+        _root = new GameObject("Table");
+        var table = _root.AddComponent<TableSession>();
+        table.Begin(TableStart.PassAndPlayDraft(), setup);
+        table.ConfirmIncomingSeat();
+        return table;
+    }
+
+    // An asymmetric start tile under a drawn tile with one rotate cell, so a turn shows in the cells.
+    private static GameSetup RotateSetup() => SetupFrom(
+        new Tile(new TileId("start"), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Blue), Cell.Color(OrdinaryCatalog.Green), Cell.Color(OrdinaryCatalog.Purple)),
+        new Tile(new TileId("spinner"), Cell.Symbol(OrdinaryCatalog.Rotate), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Red)),
+        BlankTile("pad"));
+
+    // The first seat places a plain tile beside the start; the second seat then draws the tile with a bounce cell.
+    private static GameSetup BounceBoardSetup() => SetupFrom(
+        BlankTile("start"),
+        new Tile(new TileId("side"), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Red)),
+        new Tile(new TileId("lifter"), Cell.Symbol(OrdinaryCatalog.Bounce), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Red)),
+        BlankTile("pad"));
+
+    private static Tile BlankTile(string id)
+    {
+        var blank = Cell.Symbol(OrdinaryCatalog.Blank);
+        return new Tile(new TileId(id), blank, blank, blank, blank);
+    }
+
+    private static string CellsOf(SeatView view) =>
+        string.Join(";", view.Board.Cells.Select(cell => cell.CellX + "," + cell.CellY + ":" + cell.Value));
+
     private static GameSetup StackSetup() => SetupWith(
         new Tile(new TileId("lid"), Cell.Symbol(OrdinaryCatalog.Stack), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Blue), Cell.Symbol(OrdinaryCatalog.Blank)));
 
@@ -222,18 +343,13 @@ public class TableSessionPlayModeTests
     private static GameSetup MixedSetup() => SetupWith(
         new Tile(new TileId("mixed"), Cell.Symbol(OrdinaryCatalog.Rotate), Cell.Symbol(OrdinaryCatalog.Bounce), Cell.Symbol(OrdinaryCatalog.Blank), Cell.Symbol(OrdinaryCatalog.Blank)));
 
-    private static GameSetup SetupWith(Tile drawn)
+    private static GameSetup SetupWith(Tile drawn) => SetupFrom(BlankTile("start"), drawn, BlankTile("pad"));
+
+    private static GameSetup SetupFrom(params Tile[] tiles)
     {
-        var blank = Cell.Symbol(OrdinaryCatalog.Blank);
         var missions = new[] { "a1", "a2", "b1", "b2", "spare" }
             .Select(id => new Mission(new MissionId(id), MissionPattern.Row, OrdinaryCatalog.Purple))
             .ToArray();
-        var tiles = new[]
-        {
-            new Tile(new TileId("start"), blank, blank, blank, blank),
-            drawn,
-            new Tile(new TileId("pad"), blank, blank, blank, blank),
-        };
         var seats = TableStart.PassAndPlayDraft().SeatsInTurnOrder();
         return new GameSetup(
             seats,
@@ -258,6 +374,15 @@ public class TableSessionPlayModeTests
 
         return null;
     }
+
+    // A re-render leaves the replaced buttons inactive until the frame ends, so only live ones count.
+    private Button LiveButton(string name) =>
+        _root.GetComponentsInChildren<Button>(false).FirstOrDefault(button => button.name == name);
+
+    private Button[] LiveButtons(string prefix) =>
+        _root.GetComponentsInChildren<Button>(false).Where(button => button.name.StartsWith(prefix)).ToArray();
+
+    private string ButtonCaption(string name) => LiveButton(name).GetComponentInChildren<Text>().text;
 
     private Button FindButton(string name)
     {

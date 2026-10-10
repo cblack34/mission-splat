@@ -28,6 +28,8 @@ public sealed class TableSession : MonoBehaviour
         _view.Tapped += Tap;
         _view.Confirmed += ConfirmIncomingSeat;
         _view.QuarterTurnsSelected += SetQuarterTurns;
+        _view.PowerSelected += SelectPower;
+        _view.TargetTapped += UseAt;
         _view.Started += Begin;
     }
 
@@ -45,6 +47,10 @@ public sealed class TableSession : MonoBehaviour
     public void Begin(TableStart start, GameSetup setup) => Begin(new Table(new LocalSession(), start, setup));
 
     public void Tap(int tileX, int tileY) => Forward(() => _table.Place(tileX, tileY));
+
+    public void SelectPower(SymbolId? power) => Forward(() => _table.SelectPower(power));
+
+    public void UseAt(int tileX, int tileY) => Forward(() => _table.UseAt(tileX, tileY));
 
     public void Submit(GameAction action) => Forward(() => _table.Submit(action));
 
