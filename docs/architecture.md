@@ -107,7 +107,6 @@ Recorded 2026-10-09. The code lags this description in these places; each is rem
 
 - The rules engine and the match are one class, `Game`.
 - The turn driver is `TableSession`, a `MonoBehaviour` in the Unity player. The deck content is `TableDeck` in the Unity player. `HumanPlayer` implements `IPlayer` by buffering a tap.
-- `LocalSession` rebuilds the board view from the placements it accepted, which would misreport a bounced tile. The match will expose the board instead.
 
 The player must not take the rules package from a NuGet feed. The rules and app build copy the DLLs into the local UPM package. Those DLLs are build output and are not committed. A later server uses a project reference, not the UPM package.
 
