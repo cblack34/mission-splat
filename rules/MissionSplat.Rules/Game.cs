@@ -7,9 +7,8 @@ public sealed class Game
     private readonly Mission[] _missionDeck;
     private readonly Tile[] _matchDeck;
     private readonly Grid _grid;
-    private readonly MissionPattern[] _patterns;
-    private readonly SymbolId[] _symbols;
-    private readonly PowerUses _spent;
+    private readonly Ruleset _ruleset;
+    private readonly SpentUses _spent;
     private readonly bool _hasEnded;
 
     private Game(
@@ -18,10 +17,9 @@ public sealed class Game
         Mission[] missionDeck,
         Tile[] matchDeck,
         Grid grid,
-        MissionPattern[] patterns,
-        SymbolId[] symbols,
+        Ruleset ruleset,
         int claimsRequiredToWin,
-        PowerUses spent,
+        SpentUses spent,
         bool hasEnded)
     {
         _seats = seats;
@@ -29,8 +27,7 @@ public sealed class Game
         _missionDeck = missionDeck;
         _matchDeck = matchDeck;
         _grid = grid;
-        _patterns = patterns;
-        _symbols = symbols;
+        _ruleset = ruleset;
         ClaimsRequiredToWin = claimsRequiredToWin;
         _spent = spent;
         _hasEnded = hasEnded;
@@ -122,16 +119,7 @@ public sealed class Game
             return [];
         }
 
-        var legal = new List<LegalPlacement>();
-        foreach (var position in PlacementCandidates())
-        {
-            if (PlacementRefusal(tile, position.TileX, position.TileY) is null)
-            {
-                legal.Add(new LegalPlacement(position.TileX, position.TileY, KindAt(position.TileX, position.TileY)));
-            }
-        }
-
-        return legal;
+        return _ruleset.LegalPlacements(_grid, tile);
     }
 
     public IReadOnlyList<BoardPosition> LegalTargets(SymbolId power)
@@ -141,35 +129,21 @@ public sealed class Game
             return [];
         }
 
-        var targets = new List<BoardPosition>();
-        foreach (var coord in _grid.TilePositions)
-        {
-            if (UseRefusal(tile, power, coord.X, coord.Y) is null)
-            {
-                targets.Add(new BoardPosition(coord.X, coord.Y));
-            }
-        }
-
-        return Sorted(targets);
+        return _ruleset.LegalTargets(_grid, tile, power, _spent);
     }
 
     // Stack is not counted: it is no separate use, only the on-top option inside a placement.
     public int RemainingUses(SymbolId power) =>
-        QueryTile is { } tile && OrdinaryCatalog.IsUsePower(power) ? Remaining(tile, power, Spent(power)) : 0;
+        QueryTile is { } tile && OrdinaryCatalog.IsUsePower(power) ? _ruleset.Remaining(tile, power, _spent) : 0;
 
     // The top tile at each occupied position, ordered by X then Y; a covered tile is not listed.
     public IReadOnlyList<VisibleTile> Tiles
     {
         get
         {
-            var positions = new List<BoardPosition>(_grid.TileCount);
-            foreach (var coord in _grid.TilePositions)
-            {
-                positions.Add(new BoardPosition(coord.X, coord.Y));
-            }
-
+            var positions = BoardOrder.SortedPositions(_grid.TilePositions);
             var tiles = new List<VisibleTile>(positions.Count);
-            foreach (var position in Sorted(positions))
+            foreach (var position in positions)
             {
                 var tile = _grid.TileAt(position.TileX, position.TileY)
                     ?? throw new InvalidOperationException("A listed board position holds no tile.");
@@ -190,41 +164,6 @@ public sealed class Game
 
     public IReadOnlyList<TileId> CoveredTileIds(int tileX, int tileY) => _grid.CoveredTileIds(tileX, tileY);
 
-    private List<Mission> CompletedMissions(
-        IReadOnlyList<Mission> hand,
-        IReadOnlyDictionary<CellCoord, Cell> cells,
-        HashSet<CellCoord> written)
-    {
-        var completed = new List<Mission>();
-        foreach (var mission in hand)
-        {
-            if (!PatternIsActive(mission.Pattern))
-            {
-                continue;
-            }
-
-            if (PatternSearch.WasCompletedBy(mission.Pattern, mission.Color, cells, written))
-            {
-                completed.Add(mission);
-            }
-        }
-
-        return completed;
-    }
-
-    private bool PatternIsActive(MissionPattern pattern)
-    {
-        foreach (var active in _patterns)
-        {
-            if (active == pattern)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private CommandResult ResolvePlacement(
         Tile tile,
         Place place,
@@ -232,14 +171,8 @@ public sealed class Game
         IReadOnlyList<(int X, int Y, Cell Value)> located,
         TileId? covered)
     {
-        var written = new HashSet<CellCoord>(located.Count);
-        foreach (var (x, y, _) in located)
-        {
-            written.Add(new CellCoord(x, y));
-        }
-
         var acting = _seats[_currentIndex];
-        var completed = CompletedMissions(acting.Hand, nextGrid.Cells, written);
+        var completed = _ruleset.CompletedMissions(nextGrid, located, acting.Hand);
         if (completed.Count > _missionDeck.Length)
         {
             throw new UnresolvedRulingException(
@@ -284,8 +217,7 @@ public sealed class Game
             missionDeck.ToArray(),
             _matchDeck[1..],
             nextGrid,
-            _patterns,
-            _symbols,
+            _ruleset,
             ClaimsRequiredToWin,
             default,
             won);
@@ -300,14 +232,21 @@ public sealed class Game
             return Reject(RejectionReason.InvalidRotateQuarterTurns, "A rotate use is 1, 2, or 3 quarter-turns.");
         }
 
-        var refusal = UseRefusal(DrawnTile(), OrdinaryCatalog.Rotate, rotate.TileX, rotate.TileY);
+        var drawn = DrawnTile();
+        var refusal = _ruleset.UseRefusal(
+            _grid,
+            drawn,
+            OrdinaryCatalog.Rotate,
+            _spent,
+            rotate.TileX,
+            rotate.TileY);
         if (refusal is not null)
         {
             return CommandResult.Reject(this, refusal);
         }
 
-        var grid = _grid.TurnClockwise(rotate.TileX, rotate.TileY, rotate.QuarterTurnsClockwise);
-        var next = AfterPower(grid, _matchDeck, _spent with { Rotates = _spent.Rotates + 1 });
+        var grid = _ruleset.Rotate(_grid, rotate);
+        var next = AfterPower(grid, _matchDeck, _spent.WithUse(OrdinaryCatalog.Rotate));
         return CommandResult.Accept(
             next,
             [new TileRotated(CurrentSeat, rotate.TileX, rotate.TileY, rotate.QuarterTurnsClockwise)]);
@@ -315,19 +254,26 @@ public sealed class Game
 
     private CommandResult ApplyBounce(UseBounce bounce)
     {
-        var refusal = UseRefusal(DrawnTile(), OrdinaryCatalog.Bounce, bounce.TileX, bounce.TileY);
+        var drawn = DrawnTile();
+        var refusal = _ruleset.UseRefusal(
+            _grid,
+            drawn,
+            OrdinaryCatalog.Bounce,
+            _spent,
+            bounce.TileX,
+            bounce.TileY);
         if (refusal is not null)
         {
             return CommandResult.Reject(this, refusal);
         }
 
-        var (grid, removed, revealed) = _grid.Bounce(bounce.TileX, bounce.TileY);
+        var (grid, removed, revealed) = _ruleset.Bounce(_grid, bounce);
 
         var matchDeck = new Tile[_matchDeck.Length + 1];
         Array.Copy(_matchDeck, matchDeck, _matchDeck.Length);
         matchDeck[^1] = removed;
 
-        var next = AfterPower(grid, matchDeck, _spent with { Bounces = _spent.Bounces + 1 });
+        var next = AfterPower(grid, matchDeck, _spent.WithUse(OrdinaryCatalog.Bounce));
         return CommandResult.Accept(
             next,
             [new TileBounced(CurrentSeat, bounce.TileX, bounce.TileY, removed.Id, revealed)]);
@@ -341,145 +287,30 @@ public sealed class Game
         }
 
         var tile = DrawnTile();
-        var refusal = PlacementRefusal(tile, place.TileX, place.TileY);
+        var refusal = _ruleset.PlacementRefusal(_grid, tile, place.TileX, place.TileY);
         if (refusal is not null)
         {
             return CommandResult.Reject(this, refusal);
         }
 
-        var located = tile.CellsAt(place.TileX, place.TileY, place.QuarterTurnsClockwise);
-        TileId? covered = null;
-        Grid grid;
-        if (KindAt(place.TileX, place.TileY) == PlacementKind.OnTop)
-        {
-            (grid, var buriedId) = _grid.Cover(place.TileX, place.TileY, tile, located);
-            covered = buriedId;
-        }
-        else
-        {
-            grid = _grid.Place(place.TileX, place.TileY, tile, located);
-        }
+        var (grid, located, covered) = _ruleset.Place(_grid, tile, place);
 
         return ResolvePlacement(tile, place, grid, located, covered);
     }
 
-    // The single placement decision, shared by Apply and LegalPlacements so they cannot disagree. Orientation only
-    // changes which cells are written, never where the tile may go.
-    private Rejection? PlacementRefusal(Tile tile, int tileX, int tileY)
-    {
-        if (_grid.TileCount == 0)
-        {
-            return tileX == 0 && tileY == 0
-                ? null
-                : new Rejection(RejectionReason.NotAtOrigin, "An empty board takes the drawn tile only at the origin.");
-        }
-
-        if (_grid.HasTile(tileX, tileY))
-        {
-            return ShowsStack(tile)
-                ? null
-                : new Rejection(RejectionReason.CellOccupied, "That position is already occupied.");
-        }
-
-        return _grid.SharesFullSide(tileX, tileY)
-            ? null
-            : new Rejection(
-                RejectionReason.DoesNotShareFullSide,
-                "A tile has to share a full side with a tile already on the board.");
-    }
-
-    // The single decision for a power use, shared by Apply and LegalTargets: a charge must remain, then the target must be legal.
-    private Rejection? UseRefusal(Tile tile, SymbolId power, int tileX, int tileY)
-    {
-        if (Remaining(tile, power, Spent(power)) == 0)
-        {
-            return new Rejection(
-                RejectionReason.NoUseRemaining,
-                power.Equals(OrdinaryCatalog.Rotate)
-                    ? "The drawn tile has no unused rotate cell."
-                    : "The drawn tile has no unused bounce cell.");
-        }
-
-        return TargetRefusal(power, tileX, tileY);
-    }
-
-    // The single target decision for a use power, shared by Apply and LegalTargets so they cannot disagree.
-    private Rejection? TargetRefusal(SymbolId power, int tileX, int tileY)
-    {
-        var isRotate = power.Equals(OrdinaryCatalog.Rotate);
-        if (!_grid.HasTile(tileX, tileY))
-        {
-            return isRotate
-                ? new Rejection(RejectionReason.NoTileToRotate, "There is no tile at that position to rotate.")
-                : new Rejection(RejectionReason.NoTileToBounce, "There is no tile at that position to bounce.");
-        }
-
-        return isRotate && IsSurrounded(tileX, tileY)
-            ? new Rejection(RejectionReason.TileSurrounded, "That tile is completely surrounded.")
-            : null;
-    }
-
     private static bool IsOrientation(int quarterTurns) => quarterTurns is >= 0 and <= 3;
 
-    private PlacementKind KindAt(int tileX, int tileY) =>
-        _grid.HasTile(tileX, tileY) ? PlacementKind.OnTop : PlacementKind.Beside;
-
-    // Every position the drawn tile could be offered: each occupied one and its four neighbors, or the origin alone.
-    private List<BoardPosition> PlacementCandidates()
-    {
-        var candidates = new HashSet<BoardPosition>();
-        if (_grid.TileCount == 0)
-        {
-            candidates.Add(new BoardPosition(0, 0));
-        }
-
-        foreach (var coord in _grid.TilePositions)
-        {
-            candidates.Add(new BoardPosition(coord.X, coord.Y));
-            candidates.Add(new BoardPosition(coord.X + 1, coord.Y));
-            candidates.Add(new BoardPosition(coord.X - 1, coord.Y));
-            candidates.Add(new BoardPosition(coord.X, coord.Y + 1));
-            candidates.Add(new BoardPosition(coord.X, coord.Y - 1));
-        }
-
-        return Sorted(candidates);
-    }
-
-    private static List<BoardPosition> Sorted(IEnumerable<BoardPosition> positions)
-    {
-        var sorted = new List<BoardPosition>(positions);
-        sorted.Sort((a, b) => a.TileX != b.TileX ? a.TileX.CompareTo(b.TileX) : a.TileY.CompareTo(b.TileY));
-        return sorted;
-    }
-
-    private int Spent(SymbolId power) => power.Equals(OrdinaryCatalog.Rotate) ? _spent.Rotates : _spent.Bounces;
-
     // The drawn tile as the queries see it: none when a tile shows two different powers, an open ruling Apply refuses.
-    private Tile? QueryTile => PendingMatchTile is { } tile && !ShowsMixedPowers(tile) ? tile : null;
+    private Tile? QueryTile => PendingMatchTile is { } tile && !_ruleset.ShowsMixedPowers(tile) ? tile : null;
 
     // docs/rules.md leaves a tile showing two different powers open, so no command is applied while one is drawn.
     private void RejectOpenRulings(Tile tile)
     {
-        if (ShowsMixedPowers(tile))
+        if (_ruleset.ShowsMixedPowers(tile))
         {
             throw new UnresolvedRulingException(
                 "The drawn tile shows more than one power. A tile showing two different powers is an open ruling, so this command was not applied.");
         }
-    }
-
-    // Distinct in-play powers only: an unlisted power reads as a blank, and two cells of one power are not mixed.
-    private bool ShowsMixedPowers(Tile tile)
-    {
-        var distinct = 0;
-        foreach (var power in new[] { OrdinaryCatalog.Rotate, OrdinaryCatalog.Stack, OrdinaryCatalog.Bounce })
-        {
-            if (IsInPlay(power) && CountSymbol(tile, power) > 0)
-            {
-                distinct++;
-            }
-        }
-
-        return distinct > 1;
     }
 
     // Every Apply that reaches a tile consumes the front match tile. An empty deck is the same open ruling for each.
@@ -495,50 +326,17 @@ public sealed class Game
     }
 
     // A power use keeps the same seat and the same drawn tile; only the board, the charge, and a bounced tile move.
-    private Game AfterPower(Grid grid, Tile[] matchDeck, PowerUses spent) =>
+    private Game AfterPower(Grid grid, Tile[] matchDeck, SpentUses spent) =>
         new(
             _seats,
             _currentIndex,
             _missionDeck,
             matchDeck,
             grid,
-            _patterns,
-            _symbols,
+            _ruleset,
             ClaimsRequiredToWin,
             spent,
             _hasEnded);
-
-    // Completely surrounded counts only tiles on the board; a stacked position is one occupied neighbor.
-    private bool IsSurrounded(int tileX, int tileY) =>
-        _grid.HasTile(tileX + 1, tileY)
-        && _grid.HasTile(tileX - 1, tileY)
-        && _grid.HasTile(tileX, tileY + 1)
-        && _grid.HasTile(tileX, tileY - 1);
-
-    // A power symbol the setup does not list is a blank: it grants no use and no on-top placement.
-    private int Remaining(Tile tile, SymbolId power, int spent) =>
-        IsInPlay(power) ? CountSymbol(tile, power) - spent : 0;
-
-    private bool ShowsStack(Tile tile) => IsInPlay(OrdinaryCatalog.Stack) && CountSymbol(tile, OrdinaryCatalog.Stack) > 0;
-
-    private bool IsInPlay(SymbolId symbol) => Array.IndexOf(_symbols, symbol) >= 0;
-
-    private static int CountSymbol(Tile tile, SymbolId symbol)
-    {
-        var count = 0;
-        for (var y = 0; y < 2; y++)
-        {
-            for (var x = 0; x < 2; x++)
-            {
-                if (tile.Local(x, y).TryGetSymbol(out var found) && found.Equals(symbol))
-                {
-                    count++;
-                }
-            }
-        }
-
-        return count;
-    }
 
     private CommandResult Reject(RejectionReason reason, string message) =>
         CommandResult.Reject(this, new Rejection(reason, message));
@@ -598,8 +396,7 @@ public sealed class Game
             missionDeck,
             matchDeck,
             Grid.FromStart(setup.MatchDeck[0]),
-            setup.ActivePatterns.ToArray(),
-            setup.NonScoringSymbols.ToArray(),
+            new Ruleset(setup.NonScoringSymbols, setup.ActivePatterns),
             setup.ClaimsRequiredToWin,
             default,
             hasEnded: false);
@@ -617,9 +414,6 @@ public sealed class Game
 
         throw new InvalidOperationException("The first seat was validated and then not found.");
     }
-
-    // Uses already spent on the drawn tile this turn, one count per power. An accepted placement starts the next turn at zero.
-    private readonly record struct PowerUses(int Rotates, int Bounces);
 
     private sealed class SeatSnapshot
     {

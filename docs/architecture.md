@@ -105,7 +105,6 @@ ADDING A POWER
 
 Recorded 2026-10-09. The code lags this description in these places; each is removed by a slice under [`implementation/slices/`](implementation/slices/), and this section goes with it.
 
-- The rules engine and the match are one class, `Game`.
 - The turn driver is `TableSession`, a `MonoBehaviour` in the Unity player. The deck content is `TableDeck` in the Unity player. `HumanPlayer` implements `IPlayer` by buffering a tap.
 - `ISession` still exposes `Place` and `Preview` for one placement rather than submitting an action and forwarding the legal-move queries, and `SeatView` carries no turn phase or remaining charges. Rotate and bounce are therefore not reachable through the session yet.
 
