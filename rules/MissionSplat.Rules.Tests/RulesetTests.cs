@@ -160,5 +160,62 @@ public sealed class RulesetTests
             Is.Empty);
     }
 
+    [Test]
+    public void RotatingATileTurnsOnlyThatTilesCells()
+    {
+        var board = Grid.FromStart(Cards.Cross("c"));
+        var east = Cards.Cross("e");
+        board = board.Place(1, 0, east, east.CellsAt(1, 0, 0));
+
+        var turned = Ordinary.Rotate(board, new UseRotate(0, 0, 1));
+
+        Assert.That(turned.At(0, 0), Is.EqualTo(Cards.Cross("c").Local(1, 0)));
+        Assert.That(turned.At(2, 0), Is.EqualTo(board.At(2, 0)));
+        Assert.That(turned.At(3, 1), Is.EqualTo(board.At(3, 1)));
+        Assert.That(board.At(0, 0), Is.EqualTo(Cards.Cross("c").Local(0, 0)));
+    }
+
+    [Test]
+    public void BouncingASingleLayerPositionRemovesItAndReturnsTheTile()
+    {
+        var board = Grid.FromStart(Cards.BlankTile("c"));
+        var east = Cards.BlankTile("e");
+        board = board.Place(1, 0, east, east.CellsAt(1, 0, 0));
+
+        var (after, removed, revealed) = Ordinary.Bounce(board, new UseBounce(1, 0));
+
+        Assert.That(removed.Id, Is.EqualTo(east.Id));
+        Assert.That(revealed, Is.Null);
+        Assert.That(after.HasTile(1, 0), Is.False);
+        Assert.That(after.TileCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void PlacingOnAnOccupiedPositionCoversItAndNamesTheBuriedTile()
+    {
+        var board = Grid.FromStart(Cards.BlankTile("start"));
+        var stack = Cards.Showing("s", Stack);
+
+        var (after, located, covered) = Ordinary.Place(board, stack, new Place(0, 0, 0));
+
+        Assert.That(covered, Is.EqualTo(new TileId("start")));
+        Assert.That(after.TileAt(0, 0)?.Id, Is.EqualTo(stack.Id));
+        Assert.That(after.TileCount, Is.EqualTo(1));
+        Assert.That(located, Is.EqualTo(stack.CellsAt(0, 0, 0)));
+    }
+
+    [Test]
+    public void PlacingBesideAddsTheTileAndCoversNothing()
+    {
+        var board = Grid.FromStart(Cards.BlankTile("start"));
+        var next = Cards.BlankTile("next");
+
+        var (after, _, covered) = Ordinary.Place(board, next, new Place(1, 0, 0));
+
+        Assert.That(covered, Is.Null);
+        Assert.That(after.TileAt(1, 0)?.Id, Is.EqualTo(next.Id));
+        Assert.That(after.TileCount, Is.EqualTo(2));
+    }
+
     private static (int X, int Y, Cell Value)[] Written(int x, int y) => [(x, y, Cell.Color(OrdinaryCatalog.Purple))];
 }

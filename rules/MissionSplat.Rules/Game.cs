@@ -245,7 +245,7 @@ public sealed class Game
             return CommandResult.Reject(this, refusal);
         }
 
-        var grid = _grid.TurnClockwise(rotate.TileX, rotate.TileY, rotate.QuarterTurnsClockwise);
+        var grid = _ruleset.Rotate(_grid, rotate);
         var next = AfterPower(grid, _matchDeck, _spent.WithUse(OrdinaryCatalog.Rotate));
         return CommandResult.Accept(
             next,
@@ -267,7 +267,7 @@ public sealed class Game
             return CommandResult.Reject(this, refusal);
         }
 
-        var (grid, removed, revealed) = _grid.Bounce(bounce.TileX, bounce.TileY);
+        var (grid, removed, revealed) = _ruleset.Bounce(_grid, bounce);
 
         var matchDeck = new Tile[_matchDeck.Length + 1];
         Array.Copy(_matchDeck, matchDeck, _matchDeck.Length);
@@ -293,18 +293,7 @@ public sealed class Game
             return CommandResult.Reject(this, refusal);
         }
 
-        var located = tile.CellsAt(place.TileX, place.TileY, place.QuarterTurnsClockwise);
-        TileId? covered = null;
-        Grid grid;
-        if (_ruleset.KindAt(_grid, place.TileX, place.TileY) == PlacementKind.OnTop)
-        {
-            (grid, var buriedId) = _grid.Cover(place.TileX, place.TileY, tile, located);
-            covered = buriedId;
-        }
-        else
-        {
-            grid = _grid.Place(place.TileX, place.TileY, tile, located);
-        }
+        var (grid, located, covered) = _ruleset.Place(_grid, tile, place);
 
         return ResolvePlacement(tile, place, grid, located, covered);
     }

@@ -86,6 +86,22 @@ internal sealed class Ruleset
                 "A tile has to share a full side with a tile already on the board.");
     }
 
+    // The board after a placement the refusal already passed; stacking on an occupied position buries its top tile.
+    public (Grid Grid, IReadOnlyList<(int X, int Y, Cell Value)> Located, TileId? Covered) Place(
+        Grid grid,
+        Tile drawn,
+        Place action)
+    {
+        var located = drawn.CellsAt(action.TileX, action.TileY, action.QuarterTurnsClockwise);
+        if (KindAt(grid, action.TileX, action.TileY) == PlacementKind.OnTop)
+        {
+            var (stacked, buried) = grid.Cover(action.TileX, action.TileY, drawn, located);
+            return (stacked, located, buried);
+        }
+
+        return (grid.Place(action.TileX, action.TileY, drawn, located), located, null);
+    }
+
     public PlacementKind KindAt(Grid grid, int tileX, int tileY) =>
         grid.HasTile(tileX, tileY) ? PlacementKind.OnTop : PlacementKind.Beside;
 
@@ -174,6 +190,10 @@ internal sealed class Ruleset
             : null;
     }
 
+    // The board after a rotate the refusal already passed.
+    public Grid Rotate(Grid grid, UseRotate use) =>
+        grid.TurnClockwise(use.TileX, use.TileY, use.QuarterTurnsClockwise);
+
     private Rejection? BounceRefusal(Grid grid, Tile drawn, SpentUses spent, int tileX, int tileY)
     {
         if (Remaining(drawn, OrdinaryCatalog.Bounce, spent) == 0)
@@ -185,6 +205,10 @@ internal sealed class Ruleset
             ? null
             : new Rejection(RejectionReason.NoTileToBounce, "There is no tile at that position to bounce.");
     }
+
+    // The board after a bounce the refusal already passed, with the tile it removed and any tile it revealed.
+    public (Grid Grid, Tile Removed, TileId? Revealed) Bounce(Grid grid, UseBounce use) =>
+        grid.Bounce(use.TileX, use.TileY);
 
     // Completely surrounded counts only tiles on the board; a stacked position is one occupied neighbor.
     private static bool IsSurrounded(Grid grid, int tileX, int tileY) =>
