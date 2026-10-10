@@ -12,7 +12,8 @@ public sealed class TableSnapshot
         IReadOnlyList<LegalPlacement> legalPlacements,
         IReadOnlyList<PowerTargets> legalTargets,
         int quarterTurns,
-        TableStatus status)
+        TableStatus status,
+        SymbolId? selectedPower = null)
     {
         View = view ?? throw new ArgumentNullException(nameof(view));
         SecretsVisible = secretsVisible;
@@ -21,6 +22,7 @@ public sealed class TableSnapshot
         LegalTargets = CopiedTargets(legalTargets, nameof(legalTargets));
         QuarterTurns = quarterTurns;
         Status = status ?? throw new ArgumentNullException(nameof(status));
+        SelectedPower = selectedPower;
     }
 
     public SeatView View { get; }
@@ -29,14 +31,18 @@ public sealed class TableSnapshot
 
     public bool ConcealVisible { get; }
 
-    // Beside and on-top positions for the chosen orientation.
+    // Beside and on-top positions for the chosen orientation; empty while a power is selected.
     public IReadOnlyList<LegalPlacement> LegalPlacements { get; }
 
+    // Every in-play power's targets, so a panel can show them all; the selected power's entry is the one to highlight.
     public IReadOnlyList<PowerTargets> LegalTargets { get; }
 
     public int QuarterTurns { get; }
 
     public TableStatus Status { get; }
+
+    // The power whose targets to highlight instead of placements; null while the seat is placing.
+    public SymbolId? SelectedPower { get; }
 
     private static PowerTargets[] CopiedTargets(IReadOnlyList<PowerTargets>? targets, string paramName)
     {

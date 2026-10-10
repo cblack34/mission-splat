@@ -413,6 +413,183 @@ public class TableTests
         Assert.That(() => new Table(new LocalSession(), Humans(2), other), Throws.ArgumentException);
     }
 
+    [Test]
+    public void SelectingBounce_ListsItsTargetsAndEmptiesPlacements_AndUseAtBouncesTheTarget()
+    {
+        var table = BounceTableAtTheSecondSeat();
+        var before = table.Snapshot;
+        Assert.That(before.SelectedPower, Is.Null);
+        Assert.That(before.LegalPlacements, Is.Not.Empty);
+
+        table.SelectPower(OrdinaryCatalog.Bounce);
+
+        var selected = table.Snapshot;
+        Assert.That(selected.SelectedPower, Is.EqualTo(OrdinaryCatalog.Bounce));
+        Assert.That(selected.LegalPlacements, Is.Empty);
+        var targets = selected.LegalTargets.Single(entry => entry.Power.Equals(OrdinaryCatalog.Bounce)).Targets;
+        Assert.That(targets, Does.Contain(new BoardPosition(1, 0)));
+
+        var bounced = table.UseAt(1, 0);
+
+        Assert.That(bounced.IsAccepted, Is.True, bounced.Rejection?.Message);
+        Assert.That(bounced.Events.OfType<TileBounced>().Single().Removed.Value, Is.EqualTo("side"));
+        var after = table.Snapshot;
+        Assert.That(after.View.Board.Tiles, Has.Count.EqualTo(before.View.Board.Tiles.Count - 1));
+        Assert.That(after.View.CurrentSeat, Is.EqualTo(Second));
+        Assert.That(after.ConcealVisible, Is.False);
+        Assert.That(after.SelectedPower, Is.Null, "the last use is spent");
+        Assert.That(after.LegalPlacements, Is.Not.Empty);
+    }
+
+    [Test]
+    public void SelectingRotate_AndUseAt_TurnsTheTargetByTheQuarterTurnsChosen()
+    {
+        var table = RotateTable();
+        var before = CellsOf(table.Snapshot.View);
+        table.SelectPower(OrdinaryCatalog.Rotate);
+        table.SetQuarterTurns(2);
+        Assert.That(table.Snapshot.LegalPlacements, Is.Empty);
+        Assert.That(
+            table.Snapshot.LegalTargets.Single(entry => entry.Power.Equals(OrdinaryCatalog.Rotate)).Targets,
+            Is.EqualTo(new[] { new BoardPosition(0, 0) }));
+
+        var rotated = table.UseAt(0, 0);
+
+        Assert.That(rotated.IsAccepted, Is.True, rotated.Rejection?.Message);
+        Assert.That(rotated.Events, Is.EqualTo(new GameEvent[] { new TileRotated(First, 0, 0, 2) }));
+        Assert.That(CellsOf(table.Snapshot.View), Is.Not.EqualTo(before));
+        Assert.That(table.Snapshot.View.CurrentSeat, Is.EqualTo(First));
+        Assert.That(table.Snapshot.SelectedPower, Is.Null);
+        Assert.That(table.Snapshot.LegalPlacements, Is.Not.Empty);
+    }
+
+    [Test]
+    public void UseAtWithRotateAndNoQuarterTurns_IsRefusedByRules_AndLeavesTheGameAndTheSelection()
+    {
+        var table = RotateTable();
+        var before = CellsOf(table.Snapshot.View);
+        table.SelectPower(OrdinaryCatalog.Rotate);
+        Assert.That(table.Snapshot.QuarterTurns, Is.EqualTo(0));
+
+        var refused = table.UseAt(0, 0);
+
+        Assert.That(refused.IsAccepted, Is.False);
+        Assert.That(refused.Rejection?.RulesRejection?.Reason, Is.EqualTo(RejectionReason.InvalidRotateQuarterTurns));
+        Assert.That(CellsOf(table.Snapshot.View), Is.EqualTo(before));
+        Assert.That(table.Snapshot.View.RemainingUses.Single(charge => charge.Power.Equals(OrdinaryCatalog.Rotate)).Remaining, Is.EqualTo(1));
+        Assert.That(table.Snapshot.SelectedPower, Is.EqualTo(OrdinaryCatalog.Rotate));
+    }
+
+    [Test]
+    public void SelectPower_IsIgnoredForAPowerWithNoUsesRemaining_AndWhileConcealed()
+    {
+        var table = RotateTable();
+        table.SelectPower(OrdinaryCatalog.Bounce);
+        Assert.That(table.Snapshot.SelectedPower, Is.Null, "the drawn tile has no bounce cell");
+        Assert.That(table.Snapshot.LegalPlacements, Is.Not.Empty);
+
+        table.SelectPower(OrdinaryCatalog.Rotate);
+        table.SelectPower(OrdinaryCatalog.Bounce);
+        Assert.That(table.Snapshot.SelectedPower, Is.EqualTo(OrdinaryCatalog.Rotate), "an unusable choice leaves the selection as it was");
+        table.SelectPower(null);
+        Assert.That(table.Snapshot.SelectedPower, Is.Null);
+        Assert.That(table.Snapshot.LegalPlacements, Is.Not.Empty);
+
+        var concealed = new Table(new LocalSession(), Humans(2), SpinnerSetup());
+        concealed.Start();
+        concealed.SelectPower(OrdinaryCatalog.Rotate);
+        concealed.Confirm();
+        Assert.That(concealed.Snapshot.SelectedPower, Is.Null);
+    }
+
+    [Test]
+    public void AnAcceptedPlace_ClearsTheSelection_EvenWhenTheSameHumanDrawsAnotherPowerTile()
+    {
+        var table = new Table(
+            new LocalSession(),
+            TableStart.HumanThenAi(),
+            Setup(2, StartTile(), Spinner("first"), Cards.Solid("ai", Cards.Blue), Spinner("second"), Cards.Solid("spare", Cards.Green)));
+        table.Start();
+        table.Confirm();
+        table.SelectPower(OrdinaryCatalog.Rotate);
+        Assert.That(table.Snapshot.SelectedPower, Is.EqualTo(OrdinaryCatalog.Rotate));
+
+        var placed = table.Place(1, 0);
+
+        Assert.That(placed.IsAccepted, Is.True, placed.Rejection?.Message);
+        Assert.That(table.Snapshot.View.CurrentSeat, Is.EqualTo(First));
+        Assert.That(table.Snapshot.View.RemainingUses.Single(charge => charge.Power.Equals(OrdinaryCatalog.Rotate)).Remaining, Is.EqualTo(1));
+        Assert.That(table.Snapshot.SelectedPower, Is.Null);
+        Assert.That(table.Snapshot.LegalPlacements, Is.Not.Empty);
+    }
+
+    [Test]
+    public void AStop_ClearsTheSelection()
+    {
+        var table = new Table(new RulingOnSubmitSession(new LocalSession()), Humans(2), SpinnerSetup());
+        table.Start();
+        table.Confirm();
+        table.SelectPower(OrdinaryCatalog.Rotate);
+        table.SetQuarterTurns(1);
+
+        var result = table.UseAt(0, 0);
+
+        Assert.That(result.IsAccepted, Is.False);
+        Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.Stopped));
+        Assert.That(table.Snapshot.SelectedPower, Is.Null);
+    }
+
+    [Test]
+    public void UseAtWithNothingSelected_IsRefusedLikeAnyTapWhileNobodyMayAct()
+    {
+        var table = RotateTable();
+
+        var refused = table.UseAt(0, 0);
+
+        Assert.That(refused.IsAccepted, Is.False);
+        Assert.That(refused.Rejection?.Message, Is.EqualTo("The table is not taking an action."));
+        Assert.That(refused.Rejection?.RulesRejection, Is.Null);
+        Assert.That(table.Snapshot.View.RemainingUses.Single(charge => charge.Power.Equals(OrdinaryCatalog.Rotate)).Remaining, Is.EqualTo(1));
+    }
+
+    private static Tile StartTile() => Cards.Tile("start", Cards.Red, Cards.Blue, Cards.Green, Cards.Purple);
+
+    private static Tile Spinner(string id) =>
+        Cards.Tile(id, Cell.Symbol(OrdinaryCatalog.Rotate), Cards.Red, Cards.Red, Cards.Red);
+
+    private static GameSetup SpinnerSetup() => Setup(2, StartTile(), Spinner("spinner"), Cards.Solid("blue", Cards.Blue));
+
+    // The first seat holds a drawn tile with one rotate cell, over a start tile whose turning shows.
+    private static Table RotateTable()
+    {
+        var table = new Table(new LocalSession(), Humans(2), SpinnerSetup());
+        table.Start();
+        table.Confirm();
+        return table;
+    }
+
+    // The second seat holds a drawn tile with one bounce cell, beside a tile the first seat placed.
+    private static Table BounceTableAtTheSecondSeat()
+    {
+        var table = new Table(
+            new LocalSession(),
+            Humans(2),
+            Setup(
+                2,
+                Cards.BlankTile("start"),
+                Cards.Solid("side", Cards.Red),
+                Cards.Tile("lifter", Cell.Symbol(OrdinaryCatalog.Bounce), Cards.Red, Cards.Red, Cards.Red),
+                Cards.Solid("next", Cards.Blue)));
+        table.Start();
+        table.Confirm();
+        Assert.That(table.Submit(new Place(1, 0, 0)).IsAccepted, Is.True);
+        table.Confirm();
+        return table;
+    }
+
+    private static string CellsOf(SeatView view) =>
+        string.Join(";", view.Board.Cells.Select(cell => cell.CellX + "," + cell.CellY + ":" + cell.Value));
+
     private static Tile MixedTile() =>
         Cards.Tile("mixed", Cell.Symbol(OrdinaryCatalog.Rotate), Cell.Symbol(OrdinaryCatalog.Bounce), Cards.Blank, Cards.Blank);
 

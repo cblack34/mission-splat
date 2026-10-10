@@ -14,6 +14,7 @@ public sealed class Table
     private readonly IPlayer?[] _players;
     private TableSnapshot? _snapshot;
     private int _quarterTurns;
+    private SymbolId? _selectedPower;
     private bool _conceal;
     private SeatId? _holder;
     private SeatId? _winner;
@@ -47,6 +48,7 @@ public sealed class Table
         }
 
         _quarterTurns = 0;
+        _selectedPower = null;
         _winner = null;
         _stop = null;
         _holder = null;
@@ -65,7 +67,7 @@ public sealed class Table
 
         if (!CanAct())
         {
-            return SessionResult.Reject(new SessionRejection("The table is not taking an action.", null));
+            return NotTakingAnAction();
         }
 
         var result = Apply(_session.CurrentSeat, action);
@@ -80,6 +82,24 @@ public sealed class Table
 
     // The current human seat's tile, turned as SetQuarterTurns chose.
     public SessionResult Place(int tileX, int tileY) => Submit(new Place(tileX, tileY, _quarterTurns));
+
+    // The selected power used on a tapped target; rotate turns by the SetQuarterTurns amount, and Rules refuses zero.
+    public SessionResult UseAt(int tileX, int tileY)
+    {
+        if (_selectedPower is not { } power)
+        {
+            return NotTakingAnAction();
+        }
+
+        if (power.Equals(OrdinaryCatalog.Bounce))
+        {
+            return Submit(new UseBounce(tileX, tileY));
+        }
+
+        return power.Equals(OrdinaryCatalog.Rotate)
+            ? Submit(new UseRotate(tileX, tileY, _quarterTurns))
+            : NotTakingAnAction();
+    }
 
     // The incoming human seat holds the device, so its hand may be drawn.
     public void Confirm()
@@ -107,6 +127,23 @@ public sealed class Table
         }
 
         _quarterTurns = quarterTurns;
+        Refresh();
+    }
+
+    // Choosing a power only makes sense for a use the seat still has; anything else leaves the choice as it was.
+    public void SelectPower(SymbolId? power)
+    {
+        if (!IsStarted)
+        {
+            return;
+        }
+
+        if (power is { } chosen && !(CanAct() && HasUseRemaining(Snapshot.View, chosen)))
+        {
+            return;
+        }
+
+        _selectedPower = power;
         Refresh();
     }
 
@@ -179,6 +216,7 @@ public sealed class Table
         if (action is Place)
         {
             _quarterTurns = 0;
+            _selectedPower = null;
         }
 
         foreach (var won in result.Events.OfType<GameWon>())
@@ -218,14 +256,22 @@ public sealed class Table
         }
 
         var canAct = human && !_conceal && !view.HasEnded && _stop is null;
+
+        // Whatever ended the window (a stop, a hand-over, the last use spent) lands here, so the selection never outlives its power.
+        if (_selectedPower is { } selected && !(canAct && HasUseRemaining(view, selected)))
+        {
+            _selectedPower = null;
+        }
+
         _snapshot = new TableSnapshot(
             view,
             secretsVisible: human && !_conceal && !view.HasEnded && _stop is null,
             concealVisible: _conceal,
-            canAct ? _session.LegalPlacements(seat, _quarterTurns) : [],
+            canAct && _selectedPower is null ? _session.LegalPlacements(seat, _quarterTurns) : [],
             canAct ? TargetsFor(seat, view) : [],
             _quarterTurns,
-            StatusFor(seat, view));
+            StatusFor(seat, view),
+            _selectedPower);
     }
 
     // A drawn tile with no placement and no power target (two different powers, or no tile left) is an open ruling; a GUI could never reach Submit to surface it.
@@ -270,6 +316,22 @@ public sealed class Table
 
         return false;
     }
+
+    private static bool HasUseRemaining(SeatView view, SymbolId power)
+    {
+        for (var i = 0; i < view.RemainingUses.Count; i++)
+        {
+            if (view.RemainingUses[i].Power.Equals(power) && view.RemainingUses[i].Remaining > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static SessionResult NotTakingAnAction() =>
+        SessionResult.Reject(new SessionRejection("The table is not taking an action.", null));
 
     private PowerTargets[] TargetsFor(SeatId seat, SeatView view)
     {
