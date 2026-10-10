@@ -28,19 +28,12 @@ internal sealed class Grid
 
     public int TileCount => _tiles.Count;
 
+    public IEnumerable<TileCoord> TilePositions => _tiles.Keys;
+
+    public Tile? TileAt(int tileX, int tileY) =>
+        _tiles.TryGetValue(new TileCoord(tileX, tileY), out var tile) ? tile : null;
+
     public bool HasTile(int tileX, int tileY) => _tiles.ContainsKey(new TileCoord(tileX, tileY));
-
-    // The visible tile plus whatever is buried beneath it, without allocating the id array CoveredTileIds returns.
-    public int LayerCountAt(int tileX, int tileY)
-    {
-        var coord = new TileCoord(tileX, tileY);
-        if (!_tiles.ContainsKey(coord))
-        {
-            return 0;
-        }
-
-        return 1 + (_covered.TryGetValue(coord, out var layers) ? layers.Length : 0);
-    }
 
     public IReadOnlyList<TileId> CoveredTileIds(int tileX, int tileY)
     {
@@ -67,19 +60,6 @@ internal sealed class Grid
         || HasTile(tileX, tileY + 1)
         || HasTile(tileX, tileY - 1);
 
-    public bool Overlaps(IReadOnlyList<(int X, int Y, Cell Value)> located)
-    {
-        foreach (var (x, y, _) in located)
-        {
-            if (_cells.ContainsKey(new CellCoord(x, y)))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public Grid Place(int tileX, int tileY, Tile tile, IReadOnlyList<(int X, int Y, Cell Value)> located)
     {
         var cells = new Dictionary<CellCoord, Cell>(_cells);
@@ -96,7 +76,7 @@ internal sealed class Grid
     // Dictionary.Add throws on an occupied cell. Covering replaces the visible cells and keeps every tile underneath.
     // The buried layer snapshots the four cells as they read right before this cover, since both the old and new
     // top tile occupy the same four coordinates regardless of either one's orientation.
-    public Grid Cover(int tileX, int tileY, Tile tile, IReadOnlyList<(int X, int Y, Cell Value)> located)
+    public (Grid Grid, TileId Covered) Cover(int tileX, int tileY, Tile tile, IReadOnlyList<(int X, int Y, Cell Value)> located)
     {
         var coord = new TileCoord(tileX, tileY);
         if (!_tiles.TryGetValue(coord, out var buried))
@@ -121,7 +101,7 @@ internal sealed class Grid
         tiles[coord] = tile;
         var covered = new Dictionary<TileCoord, BuriedLayer[]>(_covered);
         covered[coord] = AppendCovered(coord, new BuriedLayer(buried, buriedCells));
-        return new Grid(cells, tiles, covered);
+        return (new Grid(cells, tiles, covered), buried.Id);
     }
 
     // Occupied cells cannot be Add-ed. Replacing the four visible values leaves buried tiles under this position.
@@ -164,7 +144,7 @@ internal sealed class Grid
 
     // A single-layer position disappears entirely. A stacked position peels only its top tile and restores
     // the layer beneath using the cells it had when it was covered. The caller validates a tile is present.
-    public (Grid Grid, Tile Removed) Bounce(int tileX, int tileY)
+    public (Grid Grid, Tile Removed, TileId? Revealed) Bounce(int tileX, int tileY)
     {
         var coord = new TileCoord(tileX, tileY);
         if (!_tiles.TryGetValue(coord, out var removed))
@@ -187,7 +167,7 @@ internal sealed class Grid
                 }
             }
 
-            return (new Grid(cells, tiles, covered), removed);
+            return (new Grid(cells, tiles, covered), removed, null);
         }
 
         var revealed = layers[^1];
@@ -206,7 +186,7 @@ internal sealed class Grid
             cells[new CellCoord(x, y)] = value;
         }
 
-        return (new Grid(cells, tiles, covered), removed);
+        return (new Grid(cells, tiles, covered), removed, revealed.Tile.Id);
     }
 
     public static Grid FromStart(Tile tile)

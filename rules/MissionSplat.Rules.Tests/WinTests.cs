@@ -62,7 +62,7 @@ public class WinTests
 
         var tiles = game.TileCount;
         var remaining = game.MatchDeckRemaining;
-        var rejected = game.Place(1, 0, 0);
+        var rejected = RepresentativeDeck.Try(game, new Place(1, 0, 0));
         Assert.That(rejected.IsAccepted, Is.False);
         Assert.That(rejected.Rejection?.Reason, Is.EqualTo(RejectionReason.GameOver));
         Assert.That(rejected.Events, Is.Empty);
@@ -126,7 +126,7 @@ public class WinTests
         Assert.That(crossing.Events.OfType<GameWon>().Single().ClaimCount, Is.EqualTo(5));
         Assert.That(game.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
 
-        var rejected = game.Place(2, 0, 0);
+        var rejected = RepresentativeDeck.Try(game, new Place(2, 0, 0));
         Assert.That(rejected.Rejection?.Reason, Is.EqualTo(RejectionReason.GameOver));
         Assert.That(rejected.Game, Is.SameAs(game));
     }
@@ -169,7 +169,7 @@ public class WinTests
         Assert.That(second.Events.OfType<GameWon>().Single().ClaimCount, Is.EqualTo(2));
         Assert.That(game.CurrentSeat, Is.EqualTo(Cards.Seat("b")));
 
-        var rejected = game.Place(0, 1, 0);
+        var rejected = RepresentativeDeck.Try(game, new Place(0, 1, 0));
         Assert.That(rejected.Rejection?.Reason, Is.EqualTo(RejectionReason.GameOver));
         Assert.That(rejected.Game, Is.SameAs(game));
     }

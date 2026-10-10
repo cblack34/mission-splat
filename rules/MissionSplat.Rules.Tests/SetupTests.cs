@@ -280,6 +280,18 @@ public class SetupTests
             "Tile 't' uses symbol 'spark', which is not a non-scoring symbol.");
     }
 
+    [TestCase("rotate")]
+    [TestCase("stack")]
+    [TestCase("bounce")]
+    public void UnlistedPowerSymbolOnATile_IsAccepted_BecauseItIsReadAsABlank(string power)
+    {
+        var result = Open(
+            symbols: [OrdinaryCatalog.Blank],
+            tiles: [Cards.Tile("t", Cards.Symbol(power), Cards.Blank, Cards.Blank, Cards.Blank)]);
+
+        Assert.That(result.IsAccepted, Is.True, result.Rejection?.Message);
+    }
+
     [TestCase(0)]
     [TestCase(-1)]
     public void ClaimsRequiredBelowOne_IsRejected(int claimsRequiredToWin)

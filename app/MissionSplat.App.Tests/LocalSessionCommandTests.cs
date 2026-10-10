@@ -103,6 +103,27 @@ public class LocalSessionCommandTests
     }
 
     [Test]
+    public void AStackPlacement_ShowsOnlyTheTopTile_AndItsFourCells_OnTheBoard()
+    {
+        var session = new LocalSession();
+        var lid = Cards.Tile("lid", Cell.Symbol(OrdinaryCatalog.Stack), Cards.Red, Cards.Red, Cards.Red);
+        var started = session.Start(RepresentativeDeck.Setup(
+            ["a", "b"],
+            "a",
+            [Cards.Row("a1"), Cards.Row("a2"), Cards.Row("b1"), Cards.Row("b2"), Cards.Row("spare")],
+            [Cards.BlankTile("start"), lid]));
+        Assert.That(started.IsAccepted, Is.True, started.Rejection?.Message);
+
+        var stacked = session.Place(new SeatId("a"), new Placement(0, 0, 0));
+
+        Assert.That(stacked.IsAccepted, Is.True, stacked.Rejection?.Message);
+        var board = session.View(new SeatId("b")).Board;
+        Assert.That(board.Tiles.Select(tile => (tile.Id.Value, tile.TileX, tile.TileY)), Is.EqualTo(new[] { ("lid", 0, 0) }));
+        Assert.That(board.Cells, Has.Count.EqualTo(4));
+        Assert.That(board.Cells.Select(cell => cell.Value), Does.Contain(Cards.Red));
+    }
+
+    [Test]
     public void PreviewFromAnotherSeat_IsRejected_AndNamesNoMission()
     {
         var session = ClaimingTable.Open(3).Session;

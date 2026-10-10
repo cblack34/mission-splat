@@ -157,7 +157,8 @@ internal static class SetupCheck
 
         if (cell.TryGetSymbol(out var symbol))
         {
-            if (!symbols.Contains(symbol))
+            // An unlisted power is read as a blank, so a tile may still print it.
+            if (!symbols.Contains(symbol) && !OrdinaryCatalog.IsPower(symbol))
             {
                 return Invalid($"Tile '{tile.Value}' uses symbol '{symbol.Value}', which is not a non-scoring symbol.");
             }

@@ -3,23 +3,17 @@ namespace MissionSplat.Rules;
 public enum RejectionReason
 {
     InvalidSetup,
+    GameOver,
+    NotYourTurn,
+    InvalidQuarterTurns,
+    NotAtOrigin,
     DoesNotShareFullSide,
     CellOccupied,
-    GameOver,
-    InvalidQuarterTurns,
-    NoStackCell,
-    NoTileToCover,
-    NoRotateUse,
-    NoRotateCell,
-    TooManyRotateUses,
+    NoUseRemaining,
     InvalidRotateQuarterTurns,
     NoTileToRotate,
     TileSurrounded,
-    NoBounceUse,
-    NoBounceCell,
-    TooManyBounceUses,
     NoTileToBounce,
-    CannotBounceJustPlacedTile,
 }
 
 public sealed record Rejection(RejectionReason Reason, string Message);

@@ -105,9 +105,9 @@ ADDING A POWER
 
 Recorded 2026-10-09. The code lags this description in these places; each is removed by a slice under [`implementation/slices/`](implementation/slices/), and this section goes with it.
 
-- `Game` spends rotate and bounce after the placement and offers four placement commands instead of one action with a phase. The rules engine and the match are one class.
+- The rules engine and the match are one class, `Game`.
 - The turn driver is `TableSession`, a `MonoBehaviour` in the Unity player. The deck content is `TableDeck` in the Unity player. `HumanPlayer` implements `IPlayer` by buffering a tap.
-- `LocalSession` rebuilds the board view from the placements it accepted, which would misreport a bounced tile. The match will expose the board instead.
+- `ISession` still exposes `Place` and `Preview` for one placement rather than submitting an action and forwarding the legal-move queries, and `SeatView` carries no turn phase or remaining charges. Rotate and bounce are therefore not reachable through the session yet.
 
 The player must not take the rules package from a NuGet feed. The rules and app build copy the DLLs into the local UPM package. Those DLLs are build output and are not committed. A later server uses a project reference, not the UPM package.
 
