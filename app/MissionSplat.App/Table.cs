@@ -15,6 +15,7 @@ public sealed class Table
     private TableSnapshot? _snapshot;
     private int _quarterTurns;
     private bool _conceal;
+    private SeatId? _holder;
     private SeatId? _winner;
     private string? _stop;
 
@@ -48,6 +49,7 @@ public sealed class Table
         _quarterTurns = 0;
         _winner = null;
         _stop = null;
+        _holder = null;
         _conceal = IsHuman(_session.CurrentSeat);
         RunAutomatedSeats();
         Refresh();
@@ -85,6 +87,7 @@ public sealed class Table
         }
 
         _conceal = false;
+        _holder = _session.CurrentSeat;
         Refresh();
     }
 
@@ -174,9 +177,14 @@ public sealed class Table
             _winner = won.Seat;
         }
 
-        // A power use leaves the acting seat current, so only a move to another seat hides a hand.
+        if (IsHuman(seat))
+        {
+            _holder = seat;
+        }
+
+        // Only a hand-over to a human other than the last one holding the device hides a hand; AI turns and power uses do not.
         var next = _session.CurrentSeat;
-        if (_winner is null && !next.Equals(seat) && IsHuman(next))
+        if (_winner is null && IsHuman(next) && !next.Equals(_holder))
         {
             _conceal = true;
         }

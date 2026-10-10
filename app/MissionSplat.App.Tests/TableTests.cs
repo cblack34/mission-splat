@@ -37,9 +37,9 @@ public class TableTests
         Assert.That(view.CurrentSeat, Is.EqualTo(First), "the AI seat played and gave the turn back");
         Assert.That(view.Board.Tiles.Select(tile => tile.Id.Value), Is.EqualTo(new[] { "blue", "start", "red" }));
         Assert.That(view.PendingMatchTile?.Id.Value, Is.EqualTo("green"));
-        Assert.That(table.Snapshot.ConcealVisible, Is.True, "control moved to the human seat from another seat");
-        Assert.That(table.Snapshot.SecretsVisible, Is.False);
-        Assert.That(table.Snapshot.LegalPlacements, Is.Empty);
+        Assert.That(table.Snapshot.ConcealVisible, Is.False, "the same human still holds the device after the AI turn");
+        Assert.That(table.Snapshot.SecretsVisible, Is.True);
+        Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.ToAct));
         Assert.That(session.CurrentSeat, Is.EqualTo(First));
     }
 
@@ -74,6 +74,62 @@ public class TableTests
         Assert.That(table.Snapshot.Status.Seat, Is.EqualTo(Second));
         Assert.That(table.Snapshot.SecretsVisible, Is.True);
         Assert.That(table.Snapshot.LegalPlacements, Is.Not.Empty);
+    }
+
+    [Test]
+    public void AHumanSeatReturnedToByAnAiSeat_IsNotConcealedAgain()
+    {
+        var table = new Table(
+            new LocalSession(),
+            TableStart.HumanThenAi(),
+            Setup(2, Cards.BlankTile("start"), Cards.Solid("red", Cards.Red), Cards.Solid("blue", Cards.Blue), Cards.Solid("green", Cards.Green)));
+        table.Start();
+        Assert.That(table.Snapshot.ConcealVisible, Is.True);
+        table.Confirm();
+
+        Assert.That(table.Submit(new Place(1, 0, 0)).IsAccepted, Is.True);
+
+        var after = table.Snapshot;
+        Assert.That(after.View.CurrentSeat, Is.EqualTo(First));
+        Assert.That(after.ConcealVisible, Is.False);
+        Assert.That(after.SecretsVisible, Is.True);
+        Assert.That(after.Status.Kind, Is.EqualTo(TableStatusKind.ToAct));
+        Assert.That(after.LegalPlacements, Is.Not.Empty);
+    }
+
+    [Test]
+    public void HumanAiHuman_ConcealsOnlyWhenControlReachesADifferentHuman()
+    {
+        var third = new SeatId("3");
+        var table = new Table(
+            new LocalSession(),
+            new TableStart(3, [false, true, false], 0, false),
+            Setup(
+                3,
+                Cards.BlankTile("start"),
+                Cards.Solid("red", Cards.Red),
+                Cards.Solid("blue", Cards.Blue),
+                Cards.Solid("green", Cards.Green),
+                Cards.Solid("purple", Cards.Purple)));
+        table.Start();
+        table.Confirm();
+
+        Assert.That(table.Submit(new Place(1, 0, 0)).IsAccepted, Is.True);
+
+        Assert.That(table.Snapshot.View.CurrentSeat, Is.EqualTo(third), "the AI seat played between the two humans");
+        Assert.That(table.Snapshot.ConcealVisible, Is.True, "a different human is now current");
+        Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.ToConfirm));
+        Assert.That(table.Snapshot.SecretsVisible, Is.False);
+
+        table.Confirm();
+        Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.ToAct));
+        Assert.That(table.Snapshot.LegalPlacements, Is.Not.Empty);
+        var spot = table.Snapshot.LegalPlacements[0];
+        Assert.That(table.Submit(new Place(spot.TileX, spot.TileY, 0)).IsAccepted, Is.True);
+
+        Assert.That(table.Snapshot.View.CurrentSeat, Is.EqualTo(First), "the AI seat played again and the first human is next");
+        Assert.That(table.Snapshot.ConcealVisible, Is.True, "the device last belonged to the third seat");
+        Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.ToConfirm));
     }
 
     [Test]
