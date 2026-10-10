@@ -2,9 +2,9 @@ namespace MissionSplat.App;
 
 using MissionSplat.Rules;
 
-public sealed class PlacementPreview
+public sealed class ActionPreview
 {
-    private PlacementPreview(SessionRejection? rejection, IReadOnlyList<MissionId> claimedMissions)
+    private ActionPreview(SessionRejection? rejection, IReadOnlyList<MissionId> claimedMissions)
     {
         Rejection = rejection;
         ClaimedMissions = claimedMissions;
@@ -16,7 +16,7 @@ public sealed class PlacementPreview
 
     public IReadOnlyList<MissionId> ClaimedMissions { get; }
 
-    public static PlacementPreview Accept(IReadOnlyList<MissionId> claimedMissions)
+    public static ActionPreview Accept(IReadOnlyList<MissionId> claimedMissions)
     {
         if (claimedMissions is null)
         {
@@ -29,20 +29,20 @@ public sealed class PlacementPreview
             copy[i] = claimedMissions[i];
         }
 
-        return new PlacementPreview(null, copy);
+        return new ActionPreview(null, copy);
     }
 
-    public static PlacementPreview Reject(SessionRejection rejection)
+    public static ActionPreview Reject(SessionRejection rejection)
     {
         if (rejection is null)
         {
             throw new ArgumentNullException(nameof(rejection));
         }
 
-        return new PlacementPreview(rejection, []);
+        return new ActionPreview(rejection, []);
     }
 
-    public static PlacementPreview Reject(Rejection rejection)
+    public static ActionPreview Reject(Rejection rejection)
     {
         if (rejection is null)
         {

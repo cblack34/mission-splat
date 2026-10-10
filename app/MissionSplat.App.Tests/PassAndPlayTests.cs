@@ -20,7 +20,7 @@ public class PassAndPlayTests
             Assert.That(view.CurrentSeat, Is.EqualTo(player.Seat));
             Assert.That(view.HasEnded, Is.False);
 
-            var result = session.Place(player.Seat, player.ChoosePlacement(view));
+            var result = session.Submit(player.Seat, player.ChooseAction(view));
             Assert.That(result.IsAccepted, Is.True, result.Rejection?.Message);
             Assert.That(result.Events.OfType<MissionClaimed>().Select(claim => claim.Mission.Value), Is.EqualTo(new[] { player.Seat.Value + "-square" }));
 

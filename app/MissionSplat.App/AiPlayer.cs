@@ -4,30 +4,23 @@ using MissionSplat.Rules;
 
 public sealed class AiPlayer : IPlayer
 {
-    private static readonly (int X, int Y)[] NeighborSteps =
-    [
-        (1, 0),
-        (-1, 0),
-        (0, 1),
-        (0, -1),
-    ];
+    private readonly Func<int, IReadOnlyList<LegalPlacement>> _legalPlacements;
+    private readonly Func<GameAction, ActionPreview> _preview;
 
-    private readonly Func<Placement, PlacementPreview> _preview;
-
-    public AiPlayer(SeatId seat, Func<Placement, PlacementPreview> preview)
+    public AiPlayer(
+        SeatId seat,
+        Func<int, IReadOnlyList<LegalPlacement>> legalPlacements,
+        Func<GameAction, ActionPreview> preview)
     {
-        if (preview is null)
-        {
-            throw new ArgumentNullException(nameof(preview));
-        }
-
+        _legalPlacements = legalPlacements ?? throw new ArgumentNullException(nameof(legalPlacements));
+        _preview = preview ?? throw new ArgumentNullException(nameof(preview));
         Seat = seat;
-        _preview = preview;
     }
 
     public SeatId Seat { get; }
 
-    public Placement ChoosePlacement(SeatView view)
+    // It only places beside: a power use or a stack is never chosen.
+    public GameAction ChooseAction(SeatView view)
     {
         if (view is null)
         {
@@ -40,26 +33,35 @@ public sealed class AiPlayer : IPlayer
         }
 
         var ownMissions = IdsOf(view.UnclaimedMissions);
-        Placement? firstAccepted = null;
-        foreach (var placement in OrthogonalPlacements(view.Board))
+        Place? firstAccepted = null;
+        for (var quarterTurns = 0; quarterTurns < 4; quarterTurns++)
         {
-            var preview = _preview(placement);
-            if (!preview.IsAccepted)
+            foreach (var legal in _legalPlacements(quarterTurns))
             {
-                continue;
-            }
+                if (legal.Kind != PlacementKind.Beside)
+                {
+                    continue;
+                }
 
-            if (ClaimsOwnMission(preview.ClaimedMissions, ownMissions))
-            {
-                return placement;
-            }
+                var place = new Place(legal.TileX, legal.TileY, quarterTurns);
+                var preview = _preview(place);
+                if (!preview.IsAccepted)
+                {
+                    continue;
+                }
 
-            firstAccepted ??= placement;
+                if (ClaimsOwnMission(preview.ClaimedMissions, ownMissions))
+                {
+                    return place;
+                }
+
+                firstAccepted ??= place;
+            }
         }
 
-        if (firstAccepted is Placement chosen)
+        if (firstAccepted is not null)
         {
-            return chosen;
+            return firstAccepted;
         }
 
         var pending = view.PendingMatchTile;
@@ -91,37 +93,5 @@ public sealed class AiPlayer : IPlayer
         }
 
         return ids;
-    }
-
-    private static IEnumerable<Placement> OrthogonalPlacements(BoardView board)
-    {
-        var seen = new HashSet<(int X, int Y)>();
-        var neighbors = new List<(int X, int Y)>();
-        foreach (var tile in board.Tiles)
-        {
-            foreach (var step in NeighborSteps)
-            {
-                var tileX = tile.TileX + step.X;
-                var tileY = tile.TileY + step.Y;
-                if (seen.Add((tileX, tileY)))
-                {
-                    neighbors.Add((tileX, tileY));
-                }
-            }
-        }
-
-        neighbors.Sort(static (left, right) =>
-        {
-            var byX = left.X.CompareTo(right.X);
-            return byX != 0 ? byX : left.Y.CompareTo(right.Y);
-        });
-
-        foreach (var (tileX, tileY) in neighbors)
-        {
-            for (var quarterTurns = 0; quarterTurns < 4; quarterTurns++)
-            {
-                yield return new Placement(tileX, tileY, quarterTurns);
-            }
-        }
     }
 }

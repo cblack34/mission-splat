@@ -50,6 +50,19 @@ public class OmittedPowerTests
         Assert.That(RepresentativeDeck.Try(omitted, new Place(1, 0, 0)).IsAccepted, Is.True, "it still places beside");
     }
 
+    [Test]
+    public void PowersInPlay_ListsTheSetupsPowers_AndOmitsAnUnlistedOne()
+    {
+        var tiles = new[] { Cards.BlankTile("start"), Cards.BlankTile("drawn") };
+
+        Assert.That(
+            Open(null, tiles).PowersInPlay,
+            Is.EqualTo(new[] { OrdinaryCatalog.Rotate, OrdinaryCatalog.Stack, OrdinaryCatalog.Bounce }));
+        Assert.That(
+            Open(OrdinaryCatalog.Stack, tiles).PowersInPlay,
+            Is.EqualTo(new[] { OrdinaryCatalog.Rotate, OrdinaryCatalog.Bounce }));
+    }
+
     [TestCase("rotate")]
     [TestCase("stack")]
     [TestCase("bounce")]

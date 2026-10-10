@@ -35,7 +35,7 @@ public class SeatViewTests
         AssertPending(before, "a-tile", Cards.Red);
         AssertAbsent(before, "b-square", "b-row", "c-square", "c-row");
 
-        var placed = session.Place(new SeatId("a"), new Placement(1, 0, 0));
+        var placed = session.Submit(new SeatId("a"), new Place(1, 0, 0));
         Assert.That(placed.IsAccepted, Is.True, placed.Rejection?.Message);
 
         var fromB = session.View(new SeatId("b"));

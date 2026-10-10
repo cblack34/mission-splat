@@ -11,7 +11,8 @@ public sealed class SeatView
         BoardView board,
         SeatId currentSeat,
         bool hasEnded,
-        Tile? pendingMatchTile)
+        Tile? pendingMatchTile,
+        IReadOnlyList<PowerCharge> remainingUses)
     {
         Seat = seat;
         UnclaimedMissions = Copy(unclaimedMissions, nameof(unclaimedMissions));
@@ -20,6 +21,7 @@ public sealed class SeatView
         CurrentSeat = currentSeat;
         HasEnded = hasEnded;
         PendingMatchTile = pendingMatchTile;
+        RemainingUses = CopyValues(remainingUses, nameof(remainingUses));
     }
 
     public SeatId Seat { get; }
@@ -35,6 +37,25 @@ public sealed class SeatView
     public bool HasEnded { get; }
 
     public Tile? PendingMatchTile { get; }
+
+    // One entry per use power the setup lists, in setup order; zero once the drawn tile's cells of it are spent.
+    public IReadOnlyList<PowerCharge> RemainingUses { get; }
+
+    private static PowerCharge[] CopyValues(IReadOnlyList<PowerCharge>? charges, string name)
+    {
+        if (charges is null)
+        {
+            throw new ArgumentNullException(name);
+        }
+
+        var copy = new PowerCharge[charges.Count];
+        for (var i = 0; i < charges.Count; i++)
+        {
+            copy[i] = charges[i];
+        }
+
+        return copy;
+    }
 
     private static T[] Copy<T>(IReadOnlyList<T>? items, string name)
         where T : class
@@ -115,3 +136,5 @@ public sealed class BoardView
 public readonly record struct OccupiedTile(TileId Id, int TileX, int TileY);
 
 public readonly record struct OccupiedCell(int CellX, int CellY, Cell Value);
+
+public readonly record struct PowerCharge(SymbolId Power, int Remaining);
