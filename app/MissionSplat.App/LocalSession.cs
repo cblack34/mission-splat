@@ -4,8 +4,6 @@ using MissionSplat.Rules;
 
 public sealed class LocalSession : ISession
 {
-    // Game does not enumerate placed tiles. These are the accepted placements, so the view can read their cells.
-    private readonly List<PlacedTile> _placed = [];
     private Game? _game;
 
     public SessionResult Start(GameSetup setup)
@@ -17,10 +15,7 @@ public sealed class LocalSession : ISession
             return SessionResult.Reject(Required(result.Rejection));
         }
 
-        var startingTile = setup.MatchDeck[0].Id;
         _game = RequiredGame(result);
-        _placed.Clear();
-        _placed.Add(new PlacedTile(startingTile, 0, 0));
         return SessionResult.Accept(result.Events);
     }
 
@@ -60,9 +55,7 @@ public sealed class LocalSession : ISession
             return SessionResult.Reject(Required(result.Rejection));
         }
 
-        var placed = result.Events.OfType<TilePlaced>().Single();
         _game = RequiredGame(result);
-        _placed.Add(new PlacedTile(placed.Tile, placed.TileX, placed.TileY));
         return SessionResult.Accept(result.Events);
     }
 
@@ -117,12 +110,13 @@ public sealed class LocalSession : ISession
 
     private BoardView Board(Game game)
     {
-        var tiles = new OccupiedTile[_placed.Count];
-        var cells = new OccupiedCell[_placed.Count * 4];
+        var visible = game.Tiles;
+        var tiles = new OccupiedTile[visible.Count];
+        var cells = new OccupiedCell[visible.Count * 4];
         var cellIndex = 0;
-        for (var i = 0; i < _placed.Count; i++)
+        for (var i = 0; i < visible.Count; i++)
         {
-            var placed = _placed[i];
+            var placed = visible[i];
             tiles[i] = new OccupiedTile(placed.Id, placed.TileX, placed.TileY);
             for (var y = 0; y < 2; y++)
             {
@@ -163,6 +157,4 @@ public sealed class LocalSession : ISession
 
         return game;
     }
-
-    private readonly record struct PlacedTile(TileId Id, int TileX, int TileY);
 }

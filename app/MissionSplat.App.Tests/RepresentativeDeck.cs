@@ -39,6 +39,9 @@ internal static class Cards
 
     public static Mission Row(string id) => Mission(id, MissionPattern.Row, OrdinaryCatalog.Purple);
 
+    public static Tile Tile(string id, Cell x0y0, Cell x1y0, Cell x0y1, Cell x1y1) =>
+        new(new TileId(id), x0y0, x1y0, x0y1, x1y1);
+
     public static Tile Solid(string id, Cell cell) => new(new TileId(id), cell, cell, cell, cell);
 
     public static Tile BlankTile(string id) => Solid(id, Blank);

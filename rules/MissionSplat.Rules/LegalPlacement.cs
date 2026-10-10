@@ -10,3 +10,6 @@ public enum PlacementKind
 public readonly record struct LegalPlacement(int TileX, int TileY, PlacementKind Kind);
 
 public readonly record struct BoardPosition(int TileX, int TileY);
+
+// A tile showing on the board: the top one at its position, never one buried underneath.
+public readonly record struct VisibleTile(TileId Id, int TileX, int TileY);

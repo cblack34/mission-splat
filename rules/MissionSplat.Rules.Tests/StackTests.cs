@@ -5,6 +5,44 @@ public class StackTests
     private static readonly Cell Stack = Cell.Symbol(OrdinaryCatalog.Stack);
 
     [Test]
+    public void Tiles_ListEachOccupiedPositionOnce_WithTheTopTile_AfterACoverAndAfterABounce()
+    {
+        var game = RepresentativeDeck.TwoSeats(
+            Cards.BlankTile("start"),
+            Cards.BlankTile("pad"),
+            Cards.Tile("lid", Stack, Cards.Blank, Cards.Blank, Cards.Blank),
+            Cards.Tile("bouncer", Cell.Symbol(OrdinaryCatalog.Bounce), Cards.Blank, Cards.Blank, Cards.Blank));
+        Assert.That(game.Tiles, Is.EqualTo(new[] { new VisibleTile(new TileId("start"), 0, 0) }));
+
+        var covered = See.Game(RepresentativeDeck.Play(See.Game(RepresentativeDeck.Play(game, 1, 0)), 0, 0));
+        Assert.That(
+            covered.Tiles,
+            Is.EqualTo(new[] { new VisibleTile(new TileId("lid"), 0, 0), new VisibleTile(new TileId("pad"), 1, 0) }));
+        Assert.That(covered.Tiles, Has.Count.EqualTo(covered.TileCount));
+
+        var bounced = See.Game(RepresentativeDeck.Bounce(covered, 0, 0));
+        Assert.That(
+            bounced.Tiles,
+            Is.EqualTo(new[] { new VisibleTile(new TileId("start"), 0, 0), new VisibleTile(new TileId("pad"), 1, 0) }));
+    }
+
+    [Test]
+    public void Tiles_AreOrderedByXThenY()
+    {
+        var game = RepresentativeDeck.TwoSeats(
+            Cards.BlankTile("start"),
+            Cards.BlankTile("north"),
+            Cards.BlankTile("west"),
+            Cards.BlankTile("east"));
+
+        var placed = See.Game(RepresentativeDeck.Play(See.Game(RepresentativeDeck.Play(See.Game(RepresentativeDeck.Play(game, 0, 1)), -1, 0)), 1, 0));
+
+        Assert.That(
+            placed.Tiles.Select(t => (t.Id.Value, t.TileX, t.TileY)),
+            Is.EqualTo(new[] { ("west", -1, 0), ("start", 0, 0), ("north", 0, 1), ("east", 1, 0) }));
+    }
+
+    [Test]
     public void CoveredColor_NoLongerCompletes_AndTopColorCompletesTheActingMission()
     {
         // Representative deck. The start tile is a red square. The bridge holds the other half of a blue row.

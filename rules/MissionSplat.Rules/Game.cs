@@ -151,6 +151,29 @@ public sealed class Game
     public int RemainingUses(SymbolId power) =>
         PendingMatchTile is { } tile && OrdinaryCatalog.IsUsePower(power) ? Remaining(tile, power, Spent(power)) : 0;
 
+    // The top tile at each occupied position, ordered by X then Y; a covered tile is not listed.
+    public IReadOnlyList<VisibleTile> Tiles
+    {
+        get
+        {
+            var positions = new List<BoardPosition>(_grid.TileCount);
+            foreach (var coord in _grid.TilePositions)
+            {
+                positions.Add(new BoardPosition(coord.X, coord.Y));
+            }
+
+            var tiles = new List<VisibleTile>(positions.Count);
+            foreach (var position in Sorted(positions))
+            {
+                var tile = _grid.TileAt(position.TileX, position.TileY)
+                    ?? throw new InvalidOperationException("A listed board position holds no tile.");
+                tiles.Add(new VisibleTile(tile.Id, position.TileX, position.TileY));
+            }
+
+            return tiles;
+        }
+    }
+
     public IReadOnlyList<Mission> Hand(SeatId seat) => Copy(Find(seat).Hand);
 
     public IReadOnlyList<Mission> Claims(SeatId seat) => Copy(Find(seat).Claims);
