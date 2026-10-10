@@ -80,7 +80,7 @@ public class TableSessionPlayModeTests
         Assert.That(before.Tiles.Count, Is.EqualTo(1));
         Assert.That(before.Cells.All(cell => cell.Value.Equals(Cell.Symbol(OrdinaryCatalog.Blank))), Is.True);
 
-        table.Tap(onTop[0].TileX, onTop[0].TileY);
+        FindButton("Highlight0_0").onClick.Invoke();
 
         var after = table.Snapshot.View.Board;
         Assert.That(after.Tiles.Count, Is.EqualTo(1));
@@ -88,6 +88,27 @@ public class TableSessionPlayModeTests
         Assert.That(after.Cells.Any(cell => cell.Value.Equals(Cell.Color(OrdinaryCatalog.Red))), Is.True);
         Assert.That(table.Snapshot.View.CurrentSeat.Value, Is.EqualTo("2"));
         Assert.That(table.Snapshot.ConcealVisible, Is.True);
+    }
+
+    [Test]
+    public void BouncingTheLastTile_StillRendersTheOriginPlacement()
+    {
+        _root = new GameObject("Table");
+        var table = _root.AddComponent<TableSession>();
+        table.Begin(TableStart.PassAndPlayDraft(), BounceSetup());
+        table.ConfirmIncomingSeat();
+
+        table.Submit(new UseBounce(0, 0));
+
+        Assert.That(table.Snapshot.View.Board.Tiles.Count, Is.EqualTo(0));
+        Assert.That(table.Snapshot.LegalPlacements, Is.EqualTo(new[] { new LegalPlacement(0, 0, PlacementKind.Beside) }));
+        var origin = FindButton("Highlight0_0");
+        Assert.That(origin, Is.Not.Null);
+        Assert.That(origin.transform.parent.name, Is.EqualTo("Lattice"));
+
+        origin.onClick.Invoke();
+
+        Assert.That(table.Snapshot.View.Board.Tiles.Count, Is.EqualTo(1));
     }
 
     [Test]
@@ -169,19 +190,22 @@ public class TableSessionPlayModeTests
         Assert.That(module.leftClick.action.bindings.Any(binding => binding.path.Contains("Touchscreen")), Is.True);
     }
 
-    private static GameSetup StackSetup()
+    private static GameSetup StackSetup() => SetupWith(
+        new Tile(new TileId("lid"), Cell.Symbol(OrdinaryCatalog.Stack), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Blue), Cell.Symbol(OrdinaryCatalog.Blank)));
+
+    private static GameSetup BounceSetup() => SetupWith(
+        new Tile(new TileId("lid"), Cell.Symbol(OrdinaryCatalog.Bounce), Cell.Symbol(OrdinaryCatalog.Blank), Cell.Symbol(OrdinaryCatalog.Blank), Cell.Symbol(OrdinaryCatalog.Blank)));
+
+    private static GameSetup SetupWith(Tile drawn)
     {
         var blank = Cell.Symbol(OrdinaryCatalog.Blank);
-        var red = Cell.Color(OrdinaryCatalog.Red);
-        var blue = Cell.Color(OrdinaryCatalog.Blue);
-        var stack = Cell.Symbol(OrdinaryCatalog.Stack);
         var missions = new[] { "a1", "a2", "b1", "b2", "spare" }
             .Select(id => new Mission(new MissionId(id), MissionPattern.Row, OrdinaryCatalog.Purple))
             .ToArray();
         var tiles = new[]
         {
             new Tile(new TileId("start"), blank, blank, blank, blank),
-            new Tile(new TileId("lid"), stack, red, blue, blank),
+            drawn,
             new Tile(new TileId("pad"), blank, blank, blank, blank),
         };
         var seats = TableStart.PassAndPlayDraft().SeatsInTurnOrder();
@@ -203,6 +227,19 @@ public class TableSessionPlayModeTests
             if (rect.name == name)
             {
                 return rect;
+            }
+        }
+
+        return null;
+    }
+
+    private Button FindButton(string name)
+    {
+        foreach (var button in _root.GetComponentsInChildren<Button>(true))
+        {
+            if (button.name == name)
+            {
+                return button;
             }
         }
 

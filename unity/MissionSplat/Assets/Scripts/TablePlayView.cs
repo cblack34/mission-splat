@@ -126,7 +126,8 @@ internal sealed class TablePlayView
         Ui.Clear(_board, 1);
 
         var view = snapshot.View;
-        if (view.Board.Cells.Count == 0)
+        // An emptied board still offers the origin, so only return when nothing is drawn or tappable.
+        if (view.Board.Cells.Count == 0 && snapshot.LegalPlacements.Count == 0)
         {
             return;
         }

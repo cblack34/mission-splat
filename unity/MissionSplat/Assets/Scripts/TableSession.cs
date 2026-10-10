@@ -39,6 +39,8 @@ public sealed class TableSession : MonoBehaviour
 
     public void Tap(int tileX, int tileY) => Forward(() => _table.Place(tileX, tileY));
 
+    public void Submit(GameAction action) => Forward(() => _table.Submit(action));
+
     public void ConfirmIncomingSeat() => Forward(() => _table.Confirm());
 
     public void SetQuarterTurns(int quarterTurns) => Forward(() => _table.SetQuarterTurns(quarterTurns));
