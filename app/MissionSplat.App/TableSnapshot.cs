@@ -18,7 +18,7 @@ public sealed class TableSnapshot
         SecretsVisible = secretsVisible;
         ConcealVisible = concealVisible;
         LegalPlacements = Copied.List(legalPlacements, nameof(legalPlacements));
-        LegalTargets = Copied.List(legalTargets, nameof(legalTargets));
+        LegalTargets = CopiedTargets(legalTargets, nameof(legalTargets));
         QuarterTurns = quarterTurns;
         Status = status ?? throw new ArgumentNullException(nameof(status));
     }
@@ -37,6 +37,17 @@ public sealed class TableSnapshot
     public int QuarterTurns { get; }
 
     public TableStatus Status { get; }
+
+    private static PowerTargets[] CopiedTargets(IReadOnlyList<PowerTargets>? targets, string paramName)
+    {
+        var copy = Copied.List(targets, paramName);
+        for (var i = 0; i < copy.Length; i++)
+        {
+            copy[i] = new PowerTargets(copy[i].Power, Copied.List(copy[i].Targets, paramName));
+        }
+
+        return copy;
+    }
 }
 
 public readonly record struct PowerTargets(SymbolId Power, IReadOnlyList<BoardPosition> Targets);

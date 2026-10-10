@@ -128,10 +128,16 @@ public sealed class Table
                 return;
             }
 
+            var view = _session.View(player.Seat);
+            if (StopWhenNoActionIsPossible(player.Seat, view))
+            {
+                return;
+            }
+
             GameAction chosen;
             try
             {
-                chosen = player.ChooseAction(_session.View(player.Seat));
+                chosen = player.ChooseAction(view);
             }
             catch (Exception ex) when (ex is UnresolvedRulingException or InvalidOperationException)
             {
@@ -206,15 +212,63 @@ public sealed class Table
         var seat = _session.CurrentSeat;
         var view = _session.View(seat);
         var human = IsHuman(seat);
+        if (human && !_conceal && !view.HasEnded && _stop is null)
+        {
+            StopWhenNoActionIsPossible(seat, view);
+        }
+
         var canAct = human && !_conceal && !view.HasEnded && _stop is null;
         _snapshot = new TableSnapshot(
             view,
-            secretsVisible: human && !_conceal && !view.HasEnded,
+            secretsVisible: human && !_conceal && !view.HasEnded && _stop is null,
             concealVisible: _conceal,
             canAct ? _session.LegalPlacements(seat, _quarterTurns) : [],
             canAct ? TargetsFor(seat, view) : [],
             _quarterTurns,
             StatusFor(seat, view));
+    }
+
+    // A drawn tile with no placement and no power target (two different powers, or no tile left) is an open ruling; a GUI could never reach Submit to surface it.
+    private bool StopWhenNoActionIsPossible(SeatId seat, SeatView view)
+    {
+        if (view.HasEnded || HasAnyAction(seat, view))
+        {
+            return false;
+        }
+
+        try
+        {
+            _session.Preview(seat, new Place(0, 0, 0));
+        }
+        catch (UnresolvedRulingException ex)
+        {
+            Stop(ex.Message);
+            return true;
+        }
+
+        Stop("The drawn tile has no legal placement. That is an open ruling, so the table stopped.");
+        return true;
+    }
+
+    private bool HasAnyAction(SeatId seat, SeatView view)
+    {
+        for (var quarterTurns = 0; quarterTurns < 4; quarterTurns++)
+        {
+            if (_session.LegalPlacements(seat, quarterTurns).Count > 0)
+            {
+                return true;
+            }
+        }
+
+        for (var i = 0; i < view.RemainingUses.Count; i++)
+        {
+            if (_session.LegalTargets(seat, view.RemainingUses[i].Power).Count > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private PowerTargets[] TargetsFor(SeatId seat, SeatView view)

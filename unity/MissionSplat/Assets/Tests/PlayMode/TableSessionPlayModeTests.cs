@@ -190,11 +190,37 @@ public class TableSessionPlayModeTests
         Assert.That(module.leftClick.action.bindings.Any(binding => binding.path.Contains("Touchscreen")), Is.True);
     }
 
+    [Test]
+    public void AHumanTurnWithAMixedPowerTile_ShowsTheRulesMessage_AndOffersNothingToTap()
+    {
+        _root = new GameObject("Table");
+        var table = _root.AddComponent<TableSession>();
+        table.Begin(TableStart.PassAndPlayDraft(), MixedSetup());
+        table.ConfirmIncomingSeat();
+
+        var snapshot = table.Snapshot;
+        Assert.That(snapshot.Status.Kind, Is.EqualTo(TableStatusKind.Stopped));
+        Assert.That(snapshot.Status.Message, Does.Contain("open ruling"));
+        Assert.That(FindText("Status").text, Is.EqualTo(snapshot.Status.Message));
+        var lattice = FindRect("Lattice");
+        Assert.That(lattice, Is.Not.Null);
+        Assert.That(lattice.GetComponentsInChildren<Button>(true).Any(button => button.name.StartsWith("Highlight")), Is.False);
+        foreach (var turn in new[] { "Turn0", "Turn1", "Turn2", "Turn3" })
+        {
+            var button = FindButton(turn);
+            Assert.That(button, Is.Not.Null, turn);
+            Assert.That(button.interactable, Is.False, turn);
+        }
+    }
+
     private static GameSetup StackSetup() => SetupWith(
         new Tile(new TileId("lid"), Cell.Symbol(OrdinaryCatalog.Stack), Cell.Color(OrdinaryCatalog.Red), Cell.Color(OrdinaryCatalog.Blue), Cell.Symbol(OrdinaryCatalog.Blank)));
 
     private static GameSetup BounceSetup() => SetupWith(
         new Tile(new TileId("lid"), Cell.Symbol(OrdinaryCatalog.Bounce), Cell.Symbol(OrdinaryCatalog.Blank), Cell.Symbol(OrdinaryCatalog.Blank), Cell.Symbol(OrdinaryCatalog.Blank)));
+
+    private static GameSetup MixedSetup() => SetupWith(
+        new Tile(new TileId("mixed"), Cell.Symbol(OrdinaryCatalog.Rotate), Cell.Symbol(OrdinaryCatalog.Bounce), Cell.Symbol(OrdinaryCatalog.Blank), Cell.Symbol(OrdinaryCatalog.Blank)));
 
     private static GameSetup SetupWith(Tile drawn)
     {

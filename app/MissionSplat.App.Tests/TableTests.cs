@@ -192,12 +192,15 @@ public class TableTests
     }
 
     [Test]
-    public void AnUnresolvedRuling_StopsTheTable_WithTheRulesMessage()
+    public void AnUnresolvedRulingOnSubmit_StopsTheTable_WithTheRulesMessage()
     {
-        var table = new Table(new LocalSession(), Humans(2), Setup(2, Cards.BlankTile("start")));
+        var table = new Table(
+            new RulingOnSubmitSession(new LocalSession()),
+            Humans(2),
+            Setup(2, Cards.BlankTile("start"), Cards.Solid("red", Cards.Red), Cards.Solid("blue", Cards.Blue)));
         table.Start();
         table.Confirm();
-        Assert.That(table.Snapshot.LegalPlacements, Is.Empty, "no drawn tile means nothing to highlight");
+        Assert.That(table.Snapshot.LegalPlacements, Is.Not.Empty);
 
         var result = table.Submit(new Place(1, 0, 0));
 
@@ -214,7 +217,59 @@ public class TableTests
     }
 
     [Test]
-    public void AnAutomatedSeatWithNothingToPlace_StopsTheTable_WithItsMessage()
+    public void AHumanTurnWithAMixedPowerTile_StopsTheTable_WithTheRulesMessage()
+    {
+        var table = new Table(new LocalSession(), Humans(2), Setup(2, Cards.BlankTile("start"), MixedTile(), Cards.BlankTile("pad")));
+        table.Start();
+        Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.ToConfirm));
+
+        table.Confirm();
+
+        var snapshot = table.Snapshot;
+        Assert.That(snapshot.Status.Kind, Is.EqualTo(TableStatusKind.Stopped));
+        Assert.That(snapshot.Status.Message, Does.StartWith("The drawn tile shows more than one power."));
+        Assert.That(snapshot.Status.Message, Does.Contain("open ruling"));
+        Assert.That(snapshot.SecretsVisible, Is.False);
+        Assert.That(snapshot.ConcealVisible, Is.False);
+        Assert.That(snapshot.LegalPlacements, Is.Empty);
+        Assert.That(snapshot.LegalTargets, Is.Empty);
+        Assert.That(table.Submit(new Place(1, 0, 0)).IsAccepted, Is.False);
+    }
+
+    [Test]
+    public void AnAiTurnWithAMixedPowerTile_StopsTheTable_WithTheRulesMessageNotTheAisOwn()
+    {
+        var table = new Table(
+            new LocalSession(),
+            TableStart.HumanThenAi(),
+            Setup(2, Cards.BlankTile("start"), Cards.Solid("red", Cards.Red), MixedTile(), Cards.BlankTile("pad")));
+        table.Start();
+        table.Confirm();
+
+        var placed = table.Submit(new Place(1, 0, 0));
+
+        Assert.That(placed.IsAccepted, Is.True, placed.Rejection?.Message);
+        Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.Stopped));
+        Assert.That(table.Snapshot.Status.Message, Does.StartWith("The drawn tile shows more than one power."));
+        Assert.That(table.Snapshot.View.Board.Tiles, Has.Count.EqualTo(2), "the AI placed nothing");
+    }
+
+    [Test]
+    public void AHumanTurnWithTheMatchDeckExhausted_StopsTheTable_WithTheRulesMessage()
+    {
+        var table = new Table(new LocalSession(), Humans(2), Setup(2, Cards.BlankTile("start")));
+        table.Start();
+        table.Confirm();
+
+        var status = table.Snapshot.Status;
+        Assert.That(status.Kind, Is.EqualTo(TableStatusKind.Stopped));
+        Assert.That(status.Message, Does.StartWith("The match deck has no tile to place."));
+        Assert.That(table.Snapshot.LegalPlacements, Is.Empty);
+        Assert.That(table.Snapshot.ConcealVisible, Is.False);
+    }
+
+    [Test]
+    public void AnAutomatedSeatWithTheMatchDeckExhausted_StopsTheTable_WithTheRulesMessage()
     {
         var table = new Table(
             new LocalSession(),
@@ -227,7 +282,24 @@ public class TableTests
 
         Assert.That(placed.IsAccepted, Is.True, placed.Rejection?.Message);
         Assert.That(table.Snapshot.Status.Kind, Is.EqualTo(TableStatusKind.Stopped));
-        Assert.That(table.Snapshot.Status.Message, Is.EqualTo("No accepted placement was found."));
+        Assert.That(table.Snapshot.Status.Message, Does.StartWith("The match deck has no tile to place."));
+    }
+
+    [Test]
+    public void TheSnapshot_IsNotChangedByEditsToTheListsItWasBuiltFrom()
+    {
+        var session = new LocalSession();
+        session.Start(Setup(2, Cards.BlankTile("start"), Cards.BlankTile("drawn")));
+        var view = session.View(First);
+        var targets = new List<BoardPosition> { new(0, 0) };
+        var powers = new List<PowerTargets> { new(OrdinaryCatalog.Bounce, targets) };
+        var snapshot = new TableSnapshot(view, false, false, [], powers, 0, TableStatus.ToAct(First));
+
+        targets.Add(new BoardPosition(5, 5));
+        powers.Add(new PowerTargets(OrdinaryCatalog.Rotate, []));
+
+        Assert.That(snapshot.LegalTargets, Has.Count.EqualTo(1));
+        Assert.That(snapshot.LegalTargets[0].Targets, Is.EqualTo(new[] { new BoardPosition(0, 0) }));
     }
 
     [Test]
@@ -341,6 +413,9 @@ public class TableTests
         Assert.That(() => new Table(new LocalSession(), Humans(2), other), Throws.ArgumentException);
     }
 
+    private static Tile MixedTile() =>
+        Cards.Tile("mixed", Cell.Symbol(OrdinaryCatalog.Rotate), Cell.Symbol(OrdinaryCatalog.Bounce), Cards.Blank, Cards.Blank);
+
     private static TableStart Humans(int seatCount) => new(seatCount, new bool[seatCount], 0, false);
 
     // Seats are named as TableStart names them; the missions never complete, so only the tiles drive a test.
@@ -350,5 +425,27 @@ public class TableTests
         var missions = seats.SelectMany(seat => new[] { Cards.Row(seat + "-a"), Cards.Row(seat + "-b"), Cards.Row(seat + "-replacement") }).ToList();
         missions.Add(Cards.Row("spare"));
         return RepresentativeDeck.Setup(seats, "1", missions.ToArray(), tiles);
+    }
+
+    // The session as LocalSession answers it, except that a command reaches an open ruling.
+    private sealed class RulingOnSubmitSession(ISession inner) : ISession
+    {
+        public SeatId CurrentSeat => inner.CurrentSeat;
+
+        public IReadOnlyList<SymbolId> PowersInPlay => inner.PowersInPlay;
+
+        public SessionResult Start(GameSetup setup) => inner.Start(setup);
+
+        public SeatView View(SeatId seat) => inner.View(seat);
+
+        public SessionResult Submit(SeatId seat, GameAction action) =>
+            throw new UnresolvedRulingException("An open ruling applies here, so this command was not applied.");
+
+        public IReadOnlyList<LegalPlacement> LegalPlacements(SeatId seat, int quarterTurnsClockwise) =>
+            inner.LegalPlacements(seat, quarterTurnsClockwise);
+
+        public IReadOnlyList<BoardPosition> LegalTargets(SeatId seat, SymbolId power) => inner.LegalTargets(seat, power);
+
+        public ActionPreview Preview(SeatId seat, GameAction action) => inner.Preview(seat, action);
     }
 }
