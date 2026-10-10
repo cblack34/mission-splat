@@ -2,7 +2,10 @@ namespace MissionSplat.Player
 {
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using MissionSplat.App;
+using MissionSplat.Rules;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
@@ -23,7 +26,7 @@ public sealed class TableView : MonoBehaviour
     private TableSetupView _setupView;
     private TableSnapshot _rendered;
 
-    public event Action<Placement> Tapped;
+    public event Action<int, int> Tapped;
     public event Action Confirmed;
     public event Action<int> QuarterTurnsSelected;
     public event Action<TableStart> Started;
@@ -55,6 +58,13 @@ public sealed class TableView : MonoBehaviour
 
         camera.clearFlags = CameraClearFlags.SolidColor;
         camera.backgroundColor = SplatPalette.Cream;
+    }
+
+    // Stack rides on the placement highlights; rotate and bounce targets are not drawn yet, so those powers are noted, not refused.
+    public void NotePowers(IReadOnlyList<SymbolId> inPlay)
+    {
+        var undrawn = inPlay.Where(power => !power.Equals(OrdinaryCatalog.Stack)).Select(power => power.Value);
+        Debug.Log("Powers in play without a target view yet: " + string.Join(", ", undrawn));
     }
 
     public void ShowSetup(TableStart draft)
@@ -97,7 +107,7 @@ public sealed class TableView : MonoBehaviour
         Ui.Stretch(_setup);
         _playView = new TablePlayView(_play);
         _setupView = new TableSetupView(_setup);
-        _playView.Tapped += placement => Tapped?.Invoke(placement);
+        _playView.Tapped += (tileX, tileY) => Tapped?.Invoke(tileX, tileY);
         _playView.Confirmed += () => Confirmed?.Invoke();
         _playView.QuarterTurnsSelected += turns => QuarterTurnsSelected?.Invoke(turns);
         _setupView.Started += draft => Started?.Invoke(draft);

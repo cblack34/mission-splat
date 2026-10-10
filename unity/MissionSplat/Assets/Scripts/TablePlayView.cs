@@ -18,7 +18,7 @@ internal sealed class TablePlayView
     private readonly RectTransform _conceal;
     private readonly Text _concealLabel;
 
-    public event Action<Placement> Tapped;
+    public event Action<int, int> Tapped;
     public event Action Confirmed;
     public event Action<int> QuarterTurnsSelected;
 
@@ -59,7 +59,7 @@ internal sealed class TablePlayView
     public void Render(TableSnapshot snapshot)
     {
         Canvas.ForceUpdateCanvases();
-        _status.text = string.IsNullOrEmpty(snapshot.StopMessage) ? snapshot.Status : snapshot.StopMessage;
+        _status.text = StatusText(snapshot.Status);
         PaintPending(snapshot.View.PendingMatchTile, snapshot.QuarterTurns);
         PaintSecrets(snapshot);
         PaintBoard(snapshot);
@@ -71,6 +71,16 @@ internal sealed class TablePlayView
             _concealLabel.text = "Seat " + snapshot.View.CurrentSeat.Value + ", confirm to see your missions.";
         }
     }
+
+    private static string StatusText(TableStatus status) =>
+        status.Kind switch
+        {
+            TableStatusKind.ToConfirm => "Seat " + status.Seat.Value.Value + " to confirm.",
+            TableStatusKind.ToAct => "Seat " + status.Seat.Value.Value + " to place.",
+            TableStatusKind.Won => "Seat " + status.Seat.Value.Value + " wins.",
+            TableStatusKind.Ended => "The game has ended.",
+            _ => status.Message,
+        };
 
     private void PaintPending(Tile pending, int quarterTurns)
     {
@@ -131,7 +141,7 @@ internal sealed class TablePlayView
             maxY = Math.Max(maxY, occupiedCell.CellY);
         }
 
-        foreach (var highlight in snapshot.Highlights)
+        foreach (var highlight in snapshot.LegalPlacements)
         {
             minX = Math.Min(minX, highlight.TileX * 2);
             maxX = Math.Max(maxX, (highlight.TileX * 2) + 1);
@@ -172,12 +182,13 @@ internal sealed class TablePlayView
             return;
         }
 
-        foreach (var highlight in snapshot.Highlights)
+        foreach (var highlight in snapshot.LegalPlacements)
         {
-            var button = Ui.Button("Highlight" + highlight.TileX + "_" + highlight.TileY, lattice, string.Empty, SplatPalette.Highlight);
+            var tint = highlight.Kind == PlacementKind.OnTop ? SplatPalette.StackHighlight : SplatPalette.Highlight;
+            var button = Ui.Button("Highlight" + highlight.TileX + "_" + highlight.TileY, lattice, string.Empty, tint);
             PlaceCell(button.GetComponent<RectTransform>(), highlight.TileX * 2, highlight.TileY * 2, 2, 2, minX, minY, cellSize, 0f, 0f);
             var chosen = highlight;
-            button.onClick.AddListener(() => Tapped?.Invoke(chosen));
+            button.onClick.AddListener(() => Tapped?.Invoke(chosen.TileX, chosen.TileY));
         }
     }
 
@@ -221,7 +232,7 @@ internal sealed class TablePlayView
             var button = Ui.Button("Turn" + turn, _rotation, turn.ToString(), fill);
             var x = turn / 4f;
             Ui.Anchored(button.GetComponent<RectTransform>(), new Vector2(x + 0.02f, 0.15f), new Vector2(x + 0.23f, 0.75f), Vector2.zero, Vector2.zero);
-            button.interactable = !snapshot.ConcealVisible && string.IsNullOrEmpty(snapshot.StopMessage) && !snapshot.View.HasEnded;
+            button.interactable = !snapshot.ConcealVisible && snapshot.Status.Kind == TableStatusKind.ToAct;
             button.onClick.AddListener(() => QuarterTurnsSelected?.Invoke(chosen));
         }
     }
