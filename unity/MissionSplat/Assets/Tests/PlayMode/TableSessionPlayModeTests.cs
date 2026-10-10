@@ -225,11 +225,13 @@ public class TableSessionPlayModeTests
         Assert.That(table.Snapshot.SelectedPower, Is.EqualTo(OrdinaryCatalog.Rotate));
         Assert.That(LiveButtons("Highlight"), Is.Empty);
         Assert.That(LiveButton("Target0_0"), Is.Not.Null);
+        Assert.That(LiveButton("Target0_0").interactable, Is.False, "a rotate target waits for a 1–3 amount");
         Assert.That(LiveButton("Turn0").interactable, Is.False);
         Assert.That(LiveButton("Turn2").interactable, Is.True);
         Assert.That(FindText("Status").text, Does.Contain("rotate"));
 
         LiveButton("Turn2").onClick.Invoke();
+        Assert.That(LiveButton("Target0_0").interactable, Is.True);
         LiveButton("Target0_0").onClick.Invoke();
 
         var snapshot = table.Snapshot;

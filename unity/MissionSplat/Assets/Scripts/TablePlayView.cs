@@ -197,9 +197,12 @@ internal sealed class TablePlayView
         }
 
         // While a power is selected the snapshot offers no placements, so only its targets are drawn.
+        // A rotate target waits for a 1–3 amount; Rules would refuse zero, so the tap is not offered until the row is set.
+        var targetsLive = !(snapshot.SelectedPower is { } selected && selected.Equals(OrdinaryCatalog.Rotate) && snapshot.QuarterTurns == 0);
         foreach (var target in snapshot.SelectedTargets)
         {
-            AddTileButton(lattice, "Target" + target.TileX + "_" + target.TileY, target.TileX, target.TileY, SplatPalette.TargetHighlight, minX, minY, cellSize, () => TargetTapped?.Invoke(target.TileX, target.TileY));
+            var button = AddTileButton(lattice, "Target" + target.TileX + "_" + target.TileY, target.TileX, target.TileY, SplatPalette.TargetHighlight, minX, minY, cellSize, () => TargetTapped?.Invoke(target.TileX, target.TileY));
+            button.interactable = targetsLive;
         }
 
         foreach (var highlight in snapshot.LegalPlacements)
@@ -209,11 +212,12 @@ internal sealed class TablePlayView
         }
     }
 
-    private static void AddTileButton(RectTransform lattice, string name, int tileX, int tileY, Color tint, int minX, int minY, float cellSize, Action onTap)
+    private static Button AddTileButton(RectTransform lattice, string name, int tileX, int tileY, Color tint, int minX, int minY, float cellSize, Action onTap)
     {
         var button = Ui.Button(name, lattice, string.Empty, tint);
         PlaceCell(button.GetComponent<RectTransform>(), tileX * 2, tileY * 2, 2, 2, minX, minY, cellSize, 0f, 0f);
         button.onClick.AddListener(() => onTap());
+        return button;
     }
 
     private void PaintClaims(SeatView view)
